@@ -1,10 +1,10 @@
 #===============================================================================================================================
-# !!!   SessionData.rb  | Manages a client session and how data is transfered between the server.
+# !!!   TCPSessionData.rb  | Manages a client session and how data is transfered between the server.
 #-----------------------------------------------------------------------------------------------------------------------------
 # Version 0.6
 # Date: 12/06/2023
 #-----------------------------------------------------------------------------------------------------------------------------
-class SessionData
+class TCPSessionData
   attr_accessor :username
 
   DATA_PACKAGE = "La20a*"
@@ -38,7 +38,18 @@ class SessionData
   # Is blocking function, wait for server message.
   def await_msg(unpackage = true)
     return nil if closed?
-    response_string = @socket.gets()
+    begin
+      response_string = @socket.gets()
+    rescue => error
+      case error
+      when Errno::ECONNRESET
+        puts("Client forcibly closed connection.")
+        return nil
+      else
+        puts(error)
+      end
+    end
+    # if client is was still responsive, proccess responce
     if response_string
       response_string = response_string.encode("ascii-8bit", undef: :replace, invalid: :replace, replace: "")
       response_string = response_string.chomp()
@@ -76,7 +87,7 @@ class SessionData
   #---------------------------------------------------------------------------------------------------------
   # Close the connection.
   def close()
-    @socket.close()
+    @socket.close() unless @socket.nil?
     @socket = nil
   end
 

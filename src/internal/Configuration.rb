@@ -14,10 +14,20 @@
 #===============================================================================================================================
 require 'open-uri'
 
+Thread.report_on_exception = true # Threads report back fail
+
 #===============================================================================================================================
 module Configuration
+  DEBUG = false
   ROOT_DIR = File.expand_path('.',__dir__)
   PORT = 2000
+
+  CLI_MODE = false  # Use comand line interface, or 'false' for Gosu GUI.
+
+  # GUI mode settings:
+  FULLSCREEN = false
+  SCREEN_WIDTH = 640
+  SCREEN_HEIGHT = 480
 
   #---------------------------------------------------------------------------------------------------------
   # Get local subnet IP, (LAN)
