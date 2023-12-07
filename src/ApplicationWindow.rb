@@ -30,10 +30,12 @@ class ApplicationWindow < Gosu::Window
     @@font = Gosu::Font.new(self, nil, 24)
     @@controls = InputControls.new(self)
     # create a new session socket manager
+    @is_server = is_server
     if is_server
       @@service_mode = :tcp_server
       start_server_service()
     else
+      @username = ARGV[0] || "GosuGUI_01"
       @@service_mode = :tcp_client
     end
     # anounce to gui that the server is listening
@@ -44,26 +46,36 @@ class ApplicationWindow < Gosu::Window
     when :tcp_client
       #nothing
     else
-      send_data_into_state("ERROR: unable to start TCP service.")
+      send_data_into_state("ERROR: unable to open socket. (#{@@service_mode})")
     end
   end
 
   #---------------------------------------------------------------------------------------------------------
   def start_server_service()
-    @server = TCPserver.new()
-    Thread.new {
-      @server.listen(self)
-    }
+    case @@service_mode
+    when :tcp_server
+      @server = TCPserver.new()
+      Thread.new {
+        @server.listen(self)
+      }
+    else
+      puts("ERROR: Unkown socket server type. (#{@@service_mode})")
+    end
   end
 
   #---------------------------------------------------------------------------------------------------------
-  def start_client_service(username = "TestGuiClient1")
-    Thread.new { 
-      @client = TCPclient.new("localhost")
-      @client.start_session(username)
-      start_client_session()
-      @client.connect(self)
-    }
+  def start_client_service()
+    case @@service_mode
+    when :tcp_client
+      Thread.new { 
+        @client = TCPclient.new("localhost")
+        @client.start_session(@username)
+        start_client_session()
+        @client.connect(self)
+      }
+    else
+      puts("ERROR: Unkown socket client type. (#{@@service_mode})")
+    end
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -156,8 +168,28 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
-  def close!
+  def close()
+    puts("Closing application window.")
+    shutdown_network()
     super()
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  def shutdown_network()
+    service = network_service()
+    unless service.nil?
+      # inform the clients the server is shutting down
+      if @is_server
+        session = current_session()
+        unless session.nil?
+          shutdown_msg = "Server shut down, goodbye #{service.clients.count} clients!"
+          outdata = session.package_data(shutdown_msg)
+          service.announce_to_everyone(outdata)
+        end
+      end
+      # shut down the service
+      service.shutdown()
+    end
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -168,7 +200,7 @@ class ApplicationWindow < Gosu::Window
   #---------------------------------------------------------------------------------------------------------
   def send_data_into_state(data)
     return false if @@application_state.nil?
-    @@application_state.recieve_data(data)
+    @@application_state.recieve_network_data(data)
     return true
   end
 

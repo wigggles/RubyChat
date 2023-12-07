@@ -33,7 +33,7 @@ class TCPclient
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Send server a request to initialize the client's session data
+  # Send server a request to initialize the client's session data.
   def start_session(username = "")
     return if @error
     @@client_session = TCPSessionData.new(@@tcpSocket, username)
@@ -46,7 +46,7 @@ class TCPclient
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # This is a blocking function, it uses two threads to send/recieve data
+  # This is a blocking function, it uses two threads to send/recieve data.
   def connect(parent_window = nil)
     if parent_window.nil?
       thread_sd = Thread.new { local_sendData() } 
@@ -54,11 +54,11 @@ class TCPclient
     thread_rfs = Thread.new { receive_from_server(parent_window) }
     thread_sd.join() if parent_window.nil?
     thread_rfs.join() 
-    close() unless parent_window.nil?
+    shutdown() unless parent_window.nil?
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Update loop, read and print lines from server's connected socket
+  # Update loop, read and print lines from server's connected socket.
   def receive_from_server(parent_window = nil)
     return if @error
     while incoming_data = @@client_session.await_msg()
@@ -76,7 +76,7 @@ class TCPclient
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # local updates Loop, send client data to server for other clients
+  # Local updates Loop, send client data to server for other clients. * CLI mode only
   def local_sendData()
     loop do
       text_to_send = gets.chomp()
@@ -91,8 +91,10 @@ class TCPclient
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Close socket when done
-  def close()
+  # Gracefully shutdown the client and close the sockets.
+  def shutdown()
     @@client_session.close() unless @@client_session.nil?
+    @@client_session = nil
+    @@tcpSocket = nil # TCPSessionData closes the socket
   end
 end

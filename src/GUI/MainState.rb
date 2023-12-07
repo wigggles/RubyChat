@@ -36,15 +36,21 @@ class MainState
     return true
   end
   #---------------------------------------------------------------------------------------------------------
-  # Push text to display in console window.
-  def recieve_data(data = [])
+  # Network session has recieved data, proccess it.
+  def recieve_network_data(data = [])
+    return if @@parent_window.nil?
+    return if @@parent_window.current_session.nil?
     display_string = ""
     error = true
     case data
     when Array
       if data.length == 3
         session_start_time, from_user, message = data
-        display_string = "(#{from_user})> #{message}"
+        if @@parent_window.current_session.username == from_user
+          display_string = "(me)> #{message}"
+        else
+          display_string = "(#{from_user})> #{message}"
+        end
         error = false
       end
     when String
@@ -52,7 +58,7 @@ class MainState
       error = false
     end
     return puts("GUI malformed data passage. #{data.inspect}") if error
-    # show the message in the UI
+    # show the message in the UI by pushing the text into ConsoleBox component
     @console_box.push_text(display_string) unless @console_box.nil?
   end
   #---------------------------------------------------------------------------------------------------------

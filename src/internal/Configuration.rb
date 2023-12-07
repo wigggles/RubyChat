@@ -18,7 +18,7 @@ Thread.report_on_exception = true # Threads report back fail
 
 #===============================================================================================================================
 module Configuration
-  DEBUG = false
+  DEBUG = false # Display additional IP information.
   ROOT_DIR = File.expand_path('.',__dir__)
   PORT = 2000
 

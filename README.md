@@ -36,6 +36,12 @@ https://ruby-doc.org/3.2.2/exts/socket/TCPSocket.html
 
 https://www.rubyguides.com/2017/01/read-binary-data/
 
+https://docs.ruby-lang.org/en/2.2.0/UDPSocket.html
+
+https://docs.oracle.com/cd/E19120-01/open.solaris/817-4415/sockets-18552/index.html
+
+https://manpages.ubuntu.com/manpages/noble/en/man2/recv.2.html
+
 
 ## Default Common TCP and UDP Ports
 
@@ -58,5 +64,7 @@ https://www.rubyguides.com/2017/01/read-binary-data/
 ### Things Yet To Do
 
 * Client authentication management
-* Gosu UI
 * Client/Server graceful shutdowns
+* Gosu Game
+* UDP sockets
+* ZeroMQ stuff maybe

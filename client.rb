@@ -5,7 +5,7 @@ require './src/internal/Configuration.rb'
 
 #===============================================================================================================================
 # Construct a new client and start a connection with server.
-username = ARGV.shift
+username = ARGV[0]
 unless username
   puts("You must provide a username as a runtime argument.")
   exit()
