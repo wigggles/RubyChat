@@ -46,56 +46,61 @@ class TCPserver
   def session_thread_handle(session, parent_window)
     # string data sent first is the client's session information
     session_init_data = session.await_msg()
-    creation_time, client_name, message = session_init_data
-    duplicate_user = false
+    #puts("#{session_init_data.inspect}")
+    creation_time, null_client_id, package_mode, requested_name = session_init_data.to_a()
+    duplicate_user = nil
     # prevent same usernames between multiple clients
-    if find_client(client_name)
-      outgoing_data = @@server_session.package_data("ERROR: The name '#{client_name}' is already in use.")
+    if find_client(requested_name)
+      outgoing_data = @@server_session.package_data("REUSED: Name '#{requested_name}' is already in use.")
       session.send_msg(outgoing_data, false)
-      duplicate_user = true
-      if parent_window
-        message = "WARN: Duplicate user '#{client_name}' tried to join."
-        parent_window.send_data_into_state(message)
+      duplicate_user = "WARN: Duplicate user '#{requested_name}' tried to join."
+      if Configuration::CLI_MODE
+        puts(duplicate_user)
+      elsif parent_window
+        parent_window.send_data_into_state(duplicate_user)
       end
     else
       # watch the client session for incoming data
-      session.username = client_name
-      outgoing_data = @@server_session.package_data("Hello #{client_name}! #{@@client_sessions.count} clients.")
+      session.username = requested_name
+      outgoing_data = @@server_session.package_data("Hello #{session.username}! #{@@client_sessions.count} clients.")
       session.send_msg(outgoing_data, false)
-      puts("sending welcome to client session: #{session.username}")
-      outgoing_data = @@server_session.package_data("#{client_name} joined! #{@@client_sessions.count} clients.")
-      announce_to_everyone(outgoing_data, [session.username], parent_window)
+      puts("Sending a server welcome to client session id: (#{session.username})")
+      outgoing_data = @@server_session.package_data("#{session.username} joined! #{@@client_sessions.count} clients.")
+      send_bytes_to_everyone(outgoing_data, [session.username], parent_window)
       # while connection remains open, read sent information
-      while incoming_data = session.await_msg(false)
-        announce_to_everyone(incoming_data, [], parent_window)
+      while incoming_data_byteString = session.await_msg()
+        send_bytes_to_everyone(incoming_data_byteString, [], parent_window)
       end
     end
     # when the connection is no longer open or closed manually, dispose of the client
     session.close()
-    unless duplicate_user
+    if duplicate_user.nil?
       outgoing_data = @@server_session.package_data("#{session.username} left!")
-      announce_to_everyone(outgoing_data, [], parent_window)
+      send_bytes_to_everyone(outgoing_data, [], parent_window)
     else
-      outgoing_data = @@server_session.package_data("Duplicate user '#{client_name}' rejected!")
-      announce_to_everyone(outgoing_data, [], parent_window)
+      outgoing_data = @@server_session.package_data("Duplicate user '#{requested_name}' rejected!")
+      send_bytes_to_everyone(outgoing_data, [], parent_window)
     end
     @@client_sessions.delete(session)
   end
   
   #---------------------------------------------------------------------------------------------------------
   # Send information to all clients connected, unless excluded from the send.
-  def announce_to_everyone(sessionData, exclusions = [], parent_window = nil)
+  def send_bytes_to_everyone(sessionData_byteString, exclusions = [], parent_window = nil)
+    #puts("TCPserver is sending subscribed clients (#{sessionData_byteString.inspect})")
     @@client_sessions.each {|session|
       unless exclusions.include?(session.username)
-        session.send_msg(sessionData, false)
+        session.send_msg(sessionData_byteString, false)
       end
     }
-    # also anounce to server
-    session_start_time, from_user, message = @@server_session.unpackage_data(sessionData)
-    if parent_window
-      parent_window.send_data_into_state([session_start_time, from_user, message])
-    end
-    puts("#{from_user}: #{message}") 
+    # also display at local server interface application
+    data_package = @@server_session.unpackage_data(sessionData_byteString)
+    #puts("DEBUG: TCPserver is echoing to self what it sent.\n#{sessionData_byteString.inspect}\n(#{data_package.inspect})")
+    parent_window.send_data_into_state(data_package) if parent_window
+    # CLI mode prints
+    return unless Configuration::CLI_MODE
+    time_stmp, from_user, data_mode, data = data_package.to_a()
+    puts("#{from_user}: #{data}") 
   end
 
   #---------------------------------------------------------------------------------------------------------

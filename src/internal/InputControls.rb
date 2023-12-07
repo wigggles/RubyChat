@@ -43,8 +43,10 @@ Basic Use:
         *( Will only use a :symbol from the @@Controls table )*
                        --------------------------------------   
 Advanced Use:
-    $controls.holding?(:left , true)     -=- Check single button value for depression. Uses symbol to check if that button is being held down.
-    $controls.trigger?(:l_clk, true)     -=- Check single button value for trigger, was or is being depressed but was only triggered once.
+    $controls.holding?(:left , true)     -=- Check single button value for depression. Uses symbol to check if that button is 
+                                              being held down.
+    $controls.trigger?(:l_clk, true)     -=- Check single button value for trigger, was or is being depressed but was only 
+                                              triggered once.
         *( Can use any Gosu or @@table button :symbol )*
                        --------------------------------------   
                        
@@ -67,7 +69,7 @@ Most of the game input is wrapped into Chingu::Window dues to the way Gosu reciv
  
 This and more information on Gosu C Headers can be found here:  https://www.libgosu.org/cpp/namespace_gosu.html
 --------------------------------------       --------------------------------------       --------------------------------------
-=end #-------------------------------------------------------------------------------------------------------------------------------
+=end #--------------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------------------------------------
 # Table of mapped inputs for a US Qwerty keyboard, A standard mouse, and an Xbox Controller in windows at least...
 #-------------------------------------------------------------------------------------------------------------------------------

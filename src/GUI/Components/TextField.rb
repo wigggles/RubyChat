@@ -4,7 +4,7 @@
 class TextField
   BLINK_SPEED = 20
   REPEAT_PRESS_TIMEOUT = 10
-  MAX_LENGTH = 128
+  MAX_LENGTH = 42 # 128
   @@parent_window = nil
 
   attr_accessor :is_active, :x, :y, :z, :color, :text, :font

@@ -7,20 +7,21 @@ class TCPclient
   @@remote_ip = "localhost"
   @@local_ip = "localhost"
 
+  attr_reader :error
   #---------------------------------------------------------------------------------------------------------
   def initialize(server_ip = "localhost")
-    @error = false
+    @error = nil
     @@remote_ip, @@local_ip = Configuration.getSelfIP()
     begin
       @@tcpSocket = TCPSocket.new(server_ip, Configuration::PORT)
     rescue => error
       case error
       when Errno::ECONNREFUSED
-        puts("TCPclient reporting server connection refused.")
+        @error = "WARN: TCPclient reporting server connection refused."
       else
-        puts(error)
+        @error = error
       end
-      @error = true
+      puts(@error)
     end
     
     if Configuration::DEBUG
@@ -60,17 +61,20 @@ class TCPclient
   #---------------------------------------------------------------------------------------------------------
   # Update loop, read and print lines from server's connected socket.
   def receive_from_server(parent_window = nil)
-    return if @error
-    while incoming_data = @@client_session.await_msg()
-      session_start_time, from_user, message = incoming_data
+    return unless @error.nil?
+    while incoming_data_package = @@client_session.await_msg()
+      time_stmp, from_user, data_mode, data = incoming_data_package.to_a()
       #puts("#{@@session.username.inspect} #{from_user.inspect}")
-      if @@client_session.username == from_user
-        puts("(me)> #{message}")
+      if Configuration::CLI_MODE
+        if @@client_session.username == from_user
+          puts("(me)> #{data}")
+        else
+          puts("(#{from_user})> #{data}")
+        end
+      elsif parent_window
+        parent_window.send_data_into_state(incoming_data_package)
       else
-        puts("(#{from_user})> #{message}")
-      end
-      if parent_window
-        parent_window.send_data_into_state([session_start_time, from_user, message])
+        puts("ERROR: TCPclient recieved data from the server but has no way to display it.")
       end
     end
   end

@@ -37,27 +37,34 @@ class MainState
   end
   #---------------------------------------------------------------------------------------------------------
   # Network session has recieved data, proccess it.
-  def recieve_network_data(data = [])
+  def recieve_network_data(package)
     return if @@parent_window.nil?
-    return if @@parent_window.current_session.nil?
     display_string = ""
-    error = true
-    case data
+    #puts("DEBUG: MainState recieved network data (#{package.inspect})")
+    case package
+    when TCPSessionData::Package
+      return if @@parent_window.current_session.nil?
+      if @@parent_window.current_session.username == package.user_id
+        display_string = "(me)> #{package.data}"
+      else
+        display_string = "(#{package.user_id})> #{package.data}"
+      end
     when Array
-      if data.length == 3
-        session_start_time, from_user, message = data
+      return if @@parent_window.current_session.nil?
+      if package.length == 4
+        session_start_time, from_user, message = package
         if @@parent_window.current_session.username == from_user
           display_string = "(me)> #{message}"
         else
           display_string = "(#{from_user})> #{message}"
         end
-        error = false
       end
     when String
-      display_string = data
-      error = false
+      display_string = package
+    else
+      puts("WARN: GUI malformed data passage. #{package.inspect}")
+      display_string = "!!network data error!!"
     end
-    return puts("GUI malformed data passage. #{data.inspect}") if error
     # show the message in the UI by pushing the text into ConsoleBox component
     @console_box.push_text(display_string) unless @console_box.nil?
   end

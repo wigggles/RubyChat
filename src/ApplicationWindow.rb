@@ -69,9 +69,14 @@ class ApplicationWindow < Gosu::Window
     when :tcp_client
       Thread.new { 
         @client = TCPclient.new("localhost")
-        @client.start_session(@username)
-        start_client_session()
-        @client.connect(self)
+        if @client.error.nil?
+          @client.start_session(@username)
+          start_client_session()
+          @client.connect(self)
+        else
+          #puts("ERROR: ApplicationWindow failed to start client session. (#{@client.error})")
+          send_data_into_state(@client.error.to_s)
+        end
       }
     else
       puts("ERROR: Unkown socket client type. (#{@@service_mode})")
@@ -84,7 +89,7 @@ class ApplicationWindow < Gosu::Window
       if @client.session.nil?
         send_data_into_state("Server not found.")
       else
-        send_data_into_state("Client connected.")
+        send_data_into_state("Client touched server.")
       end
     else
       send_data_into_state("Can not start session.")
@@ -144,7 +149,7 @@ class ApplicationWindow < Gosu::Window
     case @@service_mode
     when :tcp_server
       sessionData = current_session.package_data(string)
-      return @server.announce_to_everyone(sessionData, [], self)
+      return @server.send_bytes_to_everyone(sessionData, [], self)
     when :tcp_client
       return @client.send_data(string)
     else # :offline
@@ -169,7 +174,7 @@ class ApplicationWindow < Gosu::Window
 
   #---------------------------------------------------------------------------------------------------------
   def close()
-    puts("Closing application window.")
+    puts("WARN: Closing application window.")
     shutdown_network()
     super()
   end
@@ -184,7 +189,7 @@ class ApplicationWindow < Gosu::Window
         unless session.nil?
           shutdown_msg = "Server shut down, goodbye #{service.clients.count} clients!"
           outdata = session.package_data(shutdown_msg)
-          service.announce_to_everyone(outdata)
+          service.send_bytes_to_everyone(outdata)
         end
       end
       # shut down the service

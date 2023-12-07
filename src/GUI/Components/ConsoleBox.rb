@@ -2,7 +2,7 @@
 # !!!   ConsoleBox.rb | A box that displays Kernel log information to the program's screen.
 #===============================================================================================================================
 class ConsoleBox
-  MAX_LINES = 30 # max number of lines to draw onto the screen, prevents lines being draw off screen.
+  MAX_LINES = 18 # max number of lines to draw onto the screen, prevents lines being draw off screen.
   @@parent_window = nil
 
   attr_accessor :x, :y, :width, :height
