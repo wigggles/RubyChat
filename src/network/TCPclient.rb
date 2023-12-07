@@ -89,9 +89,20 @@ class TCPclient
   end
 
   #---------------------------------------------------------------------------------------------------------
-  def send_data(string = "")
+  def send_data(data)
     return if @error
-    @@client_session.send_msg(string.chomp())
+    case data
+    when String
+      puts("DEBUG: TCPclient sending String data.")
+      data = data.chomp()
+    when TCPSessionData::Package
+      puts("DEBUG: TCPclient sending TCPSessionData::Package data.")
+      #do nothing
+    else
+      puts("ERROR: TCPclient attempting to send data type it doesnt recognize. (#{data.class})")
+      return nil
+    end
+    @@client_session.send_msg(data)
   end
 
   #---------------------------------------------------------------------------------------------------------

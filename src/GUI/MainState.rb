@@ -2,6 +2,8 @@
 # !!!   MainState.rb  |  This is the Stage that manages the chat user interfaces.
 #===============================================================================================================================
 class MainState
+  PACKAGE_MESSAGE_STRING = true  # Package outgoing message string in this class, else have SessionData handle it.
+
   @@parent_window = nil
 
   #---------------------------------------------------------------------------------------------------------
@@ -32,8 +34,44 @@ class MainState
   # Called when action is used on TextField.
   def text_action(string = "")
     #puts("MainState TextField return value: #{string}")
-    @@parent_window.send_socket_data(string)
+    if PACKAGE_MESSAGE_STRING
+      data_package = @@parent_window.getNew_session_package()
+      data_package.pack_dt_string(string)
+      @@parent_window.send_socket_data(data_package)
+    else
+      @@parent_window.send_socket_data(string)
+    end
     return true
+  end
+  #---------------------------------------------------------------------------------------------------------
+  # Called on world/state object has moved.
+  def move_action(new_x, new_y)
+    return if @@parent_window.nil?
+    data_package = @@parent_window.getNew_session_package()
+    data_package.pack_dt_object([new_x, new_y])
+    @@parent_window.send_socket_data(data_package)
+  end
+  #---------------------------------------------------------------------------------------------------------
+  # If network service is working with a TCPSessionData::Package handle how the incoming data is used.
+  def proccess_incoming_session_dataPackage(package)
+    own_package = @@parent_window.current_session.username == package.user_id
+    status_string = ""
+    # behave based on packaged data type
+    case package.data_mode
+    when TCPSessionData::Package::DATAMODE::STRING
+      if own_package
+        status_string = "(me)> #{package.data}"
+      else
+        status_string = "(#{package.user_id})> #{package.data}"
+      end
+    when TCPSessionData::Package::DATAMODE::OBJECT
+      puts("DEBUG: MainState recieved an object package. (#{package.data.inspect})")
+    else
+      puts("ERROR: MainState recieved a data package set in a mode it doesn't know. (#{package.inspect})")
+      status_string = "!Malformed Data Package!"
+    end
+    # return status
+    return status_string
   end
   #---------------------------------------------------------------------------------------------------------
   # Network session has recieved data, proccess it.
@@ -44,11 +82,7 @@ class MainState
     case package
     when TCPSessionData::Package
       return if @@parent_window.current_session.nil?
-      if @@parent_window.current_session.username == package.user_id
-        display_string = "(me)> #{package.data}"
-      else
-        display_string = "(#{package.user_id})> #{package.data}"
-      end
+      display_string = proccess_incoming_session_dataPackage(package)
     when Array
       return if @@parent_window.current_session.nil?
       if package.length == 4
@@ -66,6 +100,7 @@ class MainState
       display_string = "!!network data error!!"
     end
     # show the message in the UI by pushing the text into ConsoleBox component
+    return if display_string.length < 1
     @console_box.push_text(display_string) unless @console_box.nil?
   end
   #---------------------------------------------------------------------------------------------------------

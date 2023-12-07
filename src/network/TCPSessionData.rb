@@ -16,8 +16,15 @@ class TCPSessionData
     #    c    | 8-bit signed (signed char) mode integer
     #    a*   | take whats left, an arbritray length 'message' as string value
     #--------------------------------------
+    BYTE_OBJECT = "ll"
+    # After using the BYTE_STRING to define common data, perform additonal proccessing.
+    #
+    #    l    | 32-bit unsigned object X position.
+    #    l    | 32-bit unsigned object Y position.
+    #--------------------------------------
     module DATAMODE
       STRING = 0    # This mode is the basic one, it just uses the string as a string.
+      OBJECT = 1    # This mode performs additional variable proccessing for generic data.
     end
     #--------------------------------------
     attr_reader :time_stmp, :user_id, :data_mode, :data
@@ -34,16 +41,37 @@ class TCPSessionData
       return [@time_stmp.to_i, @user_id, @data_mode, @data].pack(Package::BYTE_STRING)
     end
     #--------------------------------------
+    # If data type is for a generic world/state object.
+    def pack_dt_object(data_array = nil)
+      if data_array.nil?
+        x, y = @data
+      else
+        x, y = data_array
+      end
+      @time_stmp = Time.new()
+      @data_mode = DATAMODE::OBJECT
+      @data = [x, y].pack(Package::BYTE_OBJECT)
+      return [@time_stmp.to_i, @user_id, @data_mode, @data].pack(Package::BYTE_STRING)
+    end
+    #--------------------------------------
     # Depending on defined mode get the data package byte string.
-    def get_packed_string(data_mode = DATAMODE::STRING, for_data = nil)
-      @data_mode = data_mode
+    def get_packed_string(data_mode = nil, for_data = nil)
+      @data_mode = data_mode unless data_mode.nil?
+      @data = for_data unless for_data.nil?
       case @data_mode
       when DATAMODE::STRING
-        case for_data
+        case @data
         when String
-          return pack_dt_string(for_data)
+          return pack_dt_string()
         else
           puts("ERROR: TCPSessionData Package is in String mode but did not recieve a string.")
+        end
+      when DATAMODE::OBJECT
+        case @data
+        when Array
+          return pack_dt_object()
+        else
+          puts("ERROR: TCPSessionData Package is in Object mode but did not recieve an array.")
         end
       else
         puts("WARN: TCPSessionData Package is in an unkown data mode. #{@data_mode.class}")
@@ -60,6 +88,15 @@ class TCPSessionData
       @user_id   = data_array[1].chomp().delete("\00") # client_id with byte padding removed
       @data_mode = data_array[2].to_i                  # extra data packaging mode
       @data      = data_array[3].chomp()               # extra/rest of data bytes sent
+      # perform and additional proccessing to the data byte string if needed
+      case @data_mode
+      when DATAMODE::STRING
+        @data = @data.to_s
+      when DATAMODE::OBJECT
+        @data = @data.unpack(Package::BYTE_OBJECT)
+      else
+        puts("ERROR: TCPSessionData::Package is in an unkown DATAMODE (#{@data_mode})")
+      end
       #puts("TCPSessionData::Package Array (#{data_array.inspect})")
       #puts("TCPSessionData::Package state (#{[@time_stmp, @user_id, @data_mode, @data]})")
     end
@@ -85,8 +122,14 @@ class TCPSessionData
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Return a new Package object to load data into in preperation for sending over network session.
+  def empty_data_package()
+    return Package.new(nil, @username)
+  end
+
+  #---------------------------------------------------------------------------------------------------------
   # Package send data array into a byte string depending on kown types.
-  def package_data(data_to_send = "")
+  def package_data(data_to_send)
     new_data_package = Package.new(nil, @username)
     case data_to_send
     when String
@@ -129,10 +172,13 @@ class TCPSessionData
       byte_string_package = sending_data.to_byte_s()
       @socket.puts(byte_string_package)
     when String
-      sending_data = sending_data.encode(TCPSessionData::FORCE_ENCODING, undef: :replace, invalid: :replace, replace: "")
+      puts("DEBUG: TCPSessionData packaging String data to send.")
+      sending_data = sending_data.encode(
+        TCPSessionData::FORCE_ENCODING, undef: :replace, invalid: :replace, replace: ""
+      )
       if pack_data
         byte_string_package = package_data(sending_data)
-        #puts("Raw: #{byte_string_package.inspect}")
+        #puts("DEBUG: TCPSessionData send_msg() raw data: (#{byte_string_package.inspect})")
         @socket.puts(byte_string_package)
       else
         @socket.puts(sending_data)

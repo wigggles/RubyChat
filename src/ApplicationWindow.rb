@@ -143,18 +143,37 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
-  def send_socket_data(string)
+  # Used to utilze the open session socket to send data.
+  def send_socket_data(data)
     return nil if network_service().nil?
-    return nil if current_session().nil?
+    return nil if current_session().nil?    
     case @@service_mode
     when :tcp_server
-      sessionData = current_session.package_data(string)
-      return @server.send_bytes_to_everyone(sessionData, [], self)
+      case data
+      when TCPSessionData::Package
+        data_byte_string = data.get_packed_string()
+      when String
+        data_byte_string = current_session.package_data(data)
+      else
+        puts("ERROR: ApplicationWindow server attempting to send unkown data type. (#{data.class})")
+        return nil
+      end
+      #puts("DEBUG: ApplicationWindow server sending data. (#{data.inspect})")
+      return @server.send_bytes_to_everyone(data_byte_string, [], self)
     when :tcp_client
-      return @client.send_data(string)
+      #puts("DEBUG: ApplicationWindow client sending data. (#{data.inspect})")
+      return @client.send_data(data)
     else # :offline
       return nil
     end
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  # Create a new data package for sending information.
+  def getNew_session_package()
+    return nil if network_service().nil?
+    return nil if current_session().nil?
+    return current_session.empty_data_package()
   end
 
   #---------------------------------------------------------------------------------------------------------
