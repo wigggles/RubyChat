@@ -2,7 +2,7 @@
 
 Ensure you have Ruby installed.
 
-This is a basic example of how a TCP server socket can be created for running a CLI chat service. It contains a server.rb and a client.rb Ruby script for running a command line interface chatting system. Client sessions have managed data set up as string byte blocks to provide and example of how to package an array of data for transmission.
+This is a basic example of how a TCP server socket can be created for running a CLI or Gosu window chat service. It contains a server.rb and a client.rb Ruby script for running and maintaining an interface for a chat system. Client sessions have managed data set up as string byte blocks to provide and example of how to package an array of data for transmission. Additionally the chat when running in ApplicationWindow mode utilizing Gosu, a GameWorld is managed with WorldObjects shared between server client sessions.
 
 ### Start Server
 ```ruby
@@ -24,24 +24,19 @@ To shut down either the server or a client, just close the terminal window.
 
 https://ruby-doc.org/3.2.2/
 
-https://ruby-doc.org/3.2.2/packed_data_rdoc.html
+[Ruby TCPSocket object](https://ruby-doc.org/3.2.2/exts/socket/TCPSocket.html) \
+[Ruby UDPSocket object](https://docs.ruby-lang.org/en/2.2.0/UDPSocket.html) \
+[Socket Basics](https://docs.oracle.com/cd/E19120-01/open.solaris/817-4415/sockets-18552/index.html) \
+[Socket Message](https://manpages.ubuntu.com/manpages/noble/en/man2/recv.2.html) \
+[How to get Public IP](https://stackoverflow.com/questions/13270042/get-public-remote-ip-address) \
+[Net::HTTP, Net::HTTPS, and Net::FTP](https://ruby-doc.org/stdlib-2.6.3/libdoc/open-uri/rdoc/OpenURI.html)
 
-https://ruby-doc.org/stdlib-2.0.0/libdoc/socket/rdoc/Addrinfo.html
 
-https://stackoverflow.com/questions/13270042/get-public-remote-ip-address
+## Notes on TCP sockets
 
-https://ruby-doc.org/stdlib-2.6.3/libdoc/open-uri/rdoc/OpenURI.html
+A "safe" ball park for max payload that can be sent in a single package using TCP sockets is 1024 bytes (1 KiB).
 
-https://ruby-doc.org/3.2.2/exts/socket/TCPSocket.html
-
-https://www.rubyguides.com/2017/01/read-binary-data/
-
-https://docs.ruby-lang.org/en/2.2.0/UDPSocket.html
-
-https://docs.oracle.com/cd/E19120-01/open.solaris/817-4415/sockets-18552/index.html
-
-https://manpages.ubuntu.com/manpages/noble/en/man2/recv.2.html
-
+Maximum theoretical size of a TCP packet is 64K (65535 bytes). Package size gets restricted by the Maximum Transmission Unit (MTU) of network resources. MTU is the maximum size of the data transfer limit set by hardware in a network. Keep in mind that Ethernet MTU is 1500 bytes, the IP header is normally 20 bytes, and TCP header which is at least 20.
 
 ## Default Common TCP and UDP Ports
 
@@ -72,7 +67,8 @@ https://manpages.ubuntu.com/manpages/noble/en/man2/recv.2.html
 
 ## Ruby pack string op flags
 
-Source: https://rubydoc.info/stdlib/core/1.9.3/Array:pack
+[Ruby Packed data](https://ruby-doc.org/3.2.2/packed_data_rdoc.html) \
+[How to use Ruby pack() unpack()](https://www.rubyguides.com/2017/01/read-binary-data)
 
 Integer Directive   | Array Element | Meaning
 :------------------:|:--------------|:--------------------------------------------------
@@ -148,3 +144,5 @@ Misc. Directive     |               | Meaning
 @         |         | moves to absolute position
 X         |         | back up a byte
 x         |         | null byte
+
+[Table Source](https://rubydoc.info/stdlib/core/1.9.3/Array:pack)
