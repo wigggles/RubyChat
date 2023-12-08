@@ -45,9 +45,9 @@ class TCPserver
   # What to do when a client sends information.
   def session_thread_handle(session, parent_window)
     # string data sent first is the client's session information
-    session_init_data = session.await_msg()
+    session_init_data = session.await_data_msg()
     #puts("#{session_init_data.inspect}")
-    creation_time, null_client_id, package_mode, requested_name = session_init_data.to_a()
+    creation_time, null_client_id, server_time, package_mode, requested_name = session_init_data.to_a()
     duplicate_user = nil
     # prevent same usernames between multiple clients
     if find_client(requested_name)
@@ -67,9 +67,25 @@ class TCPserver
       puts("Sending a server welcome to client session id: (#{session.username})")
       outgoing_data = @@server_session.package_data("#{session.username} joined! #{@@client_sessions.count} clients.")
       send_bytes_to_everyone(outgoing_data, [session.username], parent_window)
-      # while connection remains open, read sent information
-      while incoming_data_byteString = session.await_msg()
-        send_bytes_to_everyone(incoming_data_byteString, [], parent_window)
+      # while connection remains open, read sent information and then forward it to clients
+      while incoming_data_byteString = session.await_data_msg()
+        case incoming_data_byteString
+        when TCPSessionData::Package
+            if incoming_data_byteString.has_valid_data?
+              incoming_data_byteString.set_server_time()
+              send_bytes_to_everyone(incoming_data_byteString, [], parent_window)
+            else
+              package_error = true
+            end
+        when String
+          send_bytes_to_everyone(incoming_data_byteString, [], parent_window)
+        else
+          package_error = true
+        end
+        if package_error
+          puts("WARN: Server recieved a message from a client malformed. (#{incoming_data_byteString.inspect})")
+          break # stop listening to that client
+        end
       end
     end
     # when the connection is no longer open or closed manually, dispose of the client

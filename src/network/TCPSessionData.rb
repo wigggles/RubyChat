@@ -8,23 +8,46 @@ class TCPSessionData
   #---------------------------------------------------------------------------------------------------------
   # The expanded more workable type of socket data. Gives the session byte data string workable structure.
   class Package
-    BYTE_STRING = "La20ca*"
+    BYTE_STRING = "La20Lca*"
+    ARRAY_LENGTH = 5
     # The above defines how to deal with the string stream of data.
     #
-    #    L    | 32-bit unsigned creation time edian
-    #    a20  | 20 character long username
-    #    c    | 8-bit signed (signed char) mode integer
-    #    a*   | take whats left, an arbritray length 'message' as string value
+    #    L    | 32-bit unsigned local creation time edian.
+    #    a20  | 20 character long username.
+    #    L    | 32-bit unsigned server time edian.
+    #    c    | 8-bit signed (signed char) mode integer.
+    #    a*   | take whats left, an arbritray length 'message' as string value.
     #--------------------------------------
-    BYTE_OBJECT = "ll"
+    BYTE_OBJECT = "LLLc"
+    OBJECT_LENGTH = 4
     # After using the BYTE_STRING to define common data, perform additonal proccessing.
     #
-    #    l    | 32-bit unsigned object X position.
-    #    l    | 32-bit unsigned object Y position.
+    #    L    | 32-bit unsigned object refrence ID.
+    #    L    | 32-bit unsigned object X world position.
+    #    L    | 32-bit unsigned object Y world position.
+    #    c    | 8-bit signed (signed char) type integer.
     #--------------------------------------
+    # It's crude but effective to count up using constants.
     module DATAMODE
       STRING = 0    # This mode is the basic one, it just uses the string as a string.
       OBJECT = 1    # This mode performs additional variable proccessing for generic data.
+    end
+    #--------------------------------------
+    # Provide an argument and it will check to see if the mode exists.
+    def has_valid_data?
+      return false if @user_id.nil?
+      if @user_id.length > 0 && @time_stmp.is_a?(Time) && @data_mode.is_a?(Integer) && !@data.nil?
+        case @data_mode
+        when DATAMODE::STRING
+          return @data.is_a?(String)
+        when DATAMODE::OBJECT
+          if @data.is_a?(Array) && @data.length == Package::OBJECT_LENGTH
+            return true
+          end
+        end
+        return true
+      end
+      return false
     end
     #--------------------------------------
     attr_reader :time_stmp, :user_id, :data_mode, :data
@@ -33,25 +56,48 @@ class TCPSessionData
       unpack_byte_string(byte_string) unless byte_string.nil?
     end
     #--------------------------------------
+    # Update client package before forwarding so that it has a server time stamp on it.
+    # This is done by the server during this data package forward, the two times can provide ping ms.
+    def set_server_time()
+      return @srvr_time_stmp = Time.new()
+    end
+    #--------------------------------------
+    # If package is in @data_mode DATAMODE::OBJECT bring order to the Array in @data.
+    def object_data()
+      return nil if @data_mode != DATAMODE::OBJECT
+      return {
+        ref_id:  @data[0],
+        world_x: @data[1],
+        world_y: @data[2],
+        type:    @data[3]
+      }
+    end
+    #--------------------------------------
+    # Basically all traffic is a single string, packaging bytes in ways you can unpackage in order later.
+    def make_byte_string()
+      return [@time_stmp.to_i, @user_id, @srvr_time_stmp.to_i, @data_mode, @data].pack(Package::BYTE_STRING) 
+    end
+    #--------------------------------------
     # If data type is for a String, package as such.
     def pack_dt_string(string = nil)
       @time_stmp = Time.new()
       @data_mode = DATAMODE::STRING
       @data = string unless string.nil?
-      return [@time_stmp.to_i, @user_id, @data_mode, @data].pack(Package::BYTE_STRING)
+      return make_byte_string()
     end
     #--------------------------------------
     # If data type is for a generic world/state object.
     def pack_dt_object(data_array = nil)
-      if data_array.nil?
-        x, y = @data
-      else
-        x, y = data_array
-      end
       @time_stmp = Time.new()
       @data_mode = DATAMODE::OBJECT
-      @data = [x, y].pack(Package::BYTE_OBJECT)
-      return [@time_stmp.to_i, @user_id, @data_mode, @data].pack(Package::BYTE_STRING)
+      if data_array.nil?
+        ref_id, world_x, world_y, type = @data
+      else
+        ref_id, world_x, world_y, type = data_array
+      end
+      @data = [ref_id, world_x, world_y, type].pack(Package::BYTE_OBJECT)
+      # after packaging the data Array, package the entire message for sending over network
+      return make_byte_string()
     end
     #--------------------------------------
     # Depending on defined mode get the data package byte string.
@@ -84,26 +130,30 @@ class TCPSessionData
       #puts("TCPSessionData::Package byte string value (#{byte_string.inspect})")
       data_array = byte_string.unpack(Package::BYTE_STRING)
       # validate this new Array has the correct data form
-      @time_stmp = Time.at(data_array[0])              # time message was created
+      @time_stmp = Time.at(data_array[0])              # local time message was created
       @user_id   = data_array[1].chomp().delete("\00") # client_id with byte padding removed
-      @data_mode = data_array[2].to_i                  # extra data packaging mode
-      @data      = data_array[3].chomp()               # extra/rest of data bytes sent
+      @srvr_time_stmp = Time.at(data_array[2])         # time from server
+      @data_mode = data_array[3].to_i                  # extra data packaging mode
+      @data      = data_array[4].chomp()               # extra/rest of data bytes sent
       # perform and additional proccessing to the data byte string if needed
       case @data_mode
       when DATAMODE::STRING
         @data = @data.to_s
       when DATAMODE::OBJECT
         @data = @data.unpack(Package::BYTE_OBJECT)
+        unless @data.length != Package::OBJECT_LENGTH
+          puts("WARN: TCPSessionData::Package for Object is malformed.")
+        end
       else
         puts("ERROR: TCPSessionData::Package is in an unkown DATAMODE (#{@data_mode})")
       end
       #puts("TCPSessionData::Package Array (#{data_array.inspect})")
-      #puts("TCPSessionData::Package state (#{[@time_stmp, @user_id, @data_mode, @data]})")
+      #puts("TCPSessionData::Package state (#{[@time_stmp, @user_id, @srvr_time_stmp, @data_mode, @data]})")
     end
     #--------------------------------------
     # Return the package byte header and its raw data as an Array object.
     def to_a()
-      return [@time_stmp, @user_id, @data_mode, @data]
+      return [@time_stmp, @user_id, @srvr_time_stmp, @data_mode, @data]
     end
     #--------------------------------------
     # Return the package as a byte string.
@@ -193,7 +243,7 @@ class TCPSessionData
 
   #---------------------------------------------------------------------------------------------------------
   # Is blocking function, wait for server message. * CLI only
-  def await_msg(use_package = true)
+  def await_data_msg(use_package = true)
     return nil if closed?
     begin
       response_string = @socket.gets()

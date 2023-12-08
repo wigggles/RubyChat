@@ -14,6 +14,10 @@ require './src/GUI/Components/TextField.rb'
 require './src/GUI/Components/ConsoleBox.rb'
 require './src/GUI/MainState.rb'
 
+require './src/Game/GameWorld.rb'
+require './src/Game/WorldObject.rb'
+require './src/Game/World_00.rb'
+
 #===============================================================================================================================
 class ApplicationWindow < Gosu::Window
   @@application_state = nil
@@ -51,6 +55,16 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Is the application acting as the server, also checks if its running a network session.
+  def is_server?
+    if @is_server
+      return false if current_session().nil?
+      return true
+    end
+    return false
+  end
+
+  #---------------------------------------------------------------------------------------------------------
   def start_server_service()
     case @@service_mode
     when :tcp_server
@@ -65,6 +79,7 @@ class ApplicationWindow < Gosu::Window
 
   #---------------------------------------------------------------------------------------------------------
   def start_client_service()
+    send_data_into_state("Attempting to connect to server...")
     case @@service_mode
     when :tcp_client
       Thread.new { 

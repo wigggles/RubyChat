@@ -62,7 +62,7 @@ class TCPclient
   # Update loop, read and print lines from server's connected socket.
   def receive_from_server(parent_window = nil)
     return unless @error.nil?
-    while incoming_data_package = @@client_session.await_msg()
+    while incoming_data_package = @@client_session.await_data_msg()
       time_stmp, from_user, data_mode, data = incoming_data_package.to_a()
       #puts("#{@@session.username.inspect} #{from_user.inspect}")
       if Configuration::CLI_MODE
@@ -93,10 +93,10 @@ class TCPclient
     return if @error
     case data
     when String
-      puts("DEBUG: TCPclient sending String data.")
+      #puts("DEBUG: TCPclient sending String data.")
       data = data.chomp()
     when TCPSessionData::Package
-      puts("DEBUG: TCPclient sending TCPSessionData::Package data.")
+      #puts("DEBUG: TCPclient sending TCPSessionData::Package data.")
       #do nothing
     else
       puts("ERROR: TCPclient attempting to send data type it doesnt recognize. (#{data.class})")

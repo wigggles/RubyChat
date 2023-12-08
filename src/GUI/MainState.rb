@@ -5,6 +5,7 @@ class MainState
   PACKAGE_MESSAGE_STRING = true  # Package outgoing message string in this class, else have SessionData handle it.
 
   @@parent_window = nil
+  @@game_world = nil
 
   #---------------------------------------------------------------------------------------------------------
   # Create klass object.
@@ -20,6 +21,8 @@ class MainState
       :action => :text_action
     }
     @command_field = TextField.new(parent_window, options)
+    # set the default game world
+    set_game_world(World_00.new(self))
   end
   #---------------------------------------------------------------------------------------------------------
   # Draw to screen.
@@ -31,25 +34,27 @@ class MainState
     @command_field.draw unless @command_field.nil?
   end
   #---------------------------------------------------------------------------------------------------------
+  # Set the world where it's objects are located in and about.
+  def set_game_world(world_class)
+    @@game_world = world_class
+  end
+  #---------------------------------------------------------------------------------------------------------
   # Called when action is used on TextField.
   def text_action(string = "")
-    #puts("MainState TextField return value: #{string}")
+    #puts("DEBUG: MainState TextField return value: #{string}")
     if PACKAGE_MESSAGE_STRING
       data_package = @@parent_window.getNew_session_package()
-      data_package.pack_dt_string(string)
-      @@parent_window.send_socket_data(data_package)
+      if data_package.nil?
+        puts("WARN: MainState TextField could not create a new session package for sending data.")
+        @console_box.push_text("> You are not currently connected to any server.") unless @console_box.nil?
+      else
+        data_package.pack_dt_string(string)
+        @@parent_window.send_socket_data(data_package)
+      end
     else
       @@parent_window.send_socket_data(string)
     end
     return true
-  end
-  #---------------------------------------------------------------------------------------------------------
-  # Called on world/state object has moved.
-  def move_action(new_x, new_y)
-    return if @@parent_window.nil?
-    data_package = @@parent_window.getNew_session_package()
-    data_package.pack_dt_object([new_x, new_y])
-    @@parent_window.send_socket_data(data_package)
   end
   #---------------------------------------------------------------------------------------------------------
   # If network service is working with a TCPSessionData::Package handle how the incoming data is used.
@@ -65,7 +70,11 @@ class MainState
         status_string = "(#{package.user_id})> #{package.data}"
       end
     when TCPSessionData::Package::DATAMODE::OBJECT
-      puts("DEBUG: MainState recieved an object package. (#{package.data.inspect})")
+      if @@game_world.is_a?(GameWorld)
+        @@game_world.world_object_sync(package.object_data())
+      else
+        puts("ERROR: MainState recieved an object data package but doesn't have an active GameWorld.")
+      end
     else
       puts("ERROR: MainState recieved a data package set in a mode it doesn't know. (#{package.inspect})")
       status_string = "!Malformed Data Package!"
@@ -85,7 +94,7 @@ class MainState
       display_string = proccess_incoming_session_dataPackage(package)
     when Array
       return if @@parent_window.current_session.nil?
-      if package.length == 4
+      if package.length == TCPSessionData::Package::ARRAY_LENGTH
         session_start_time, from_user, message = package
         if @@parent_window.current_session.username == from_user
           display_string = "(me)> #{message}"
