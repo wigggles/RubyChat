@@ -188,7 +188,7 @@ class ApplicationWindow < Gosu::Window
         return nil
       end
       Logger.debug("ApplicationWindow", "Server sending data. (#{data.inspect})")
-      return @server.send_bytes_to_everyone(data_byte_string, [], self)
+      return @server.send_bytes_to_everyone(data_byte_string, [])
     when :tcp_client
       Logger.debug("ApplicationWindow", "Client sending data. (#{data.inspect})")
       return @client.send_data(data)
@@ -224,6 +224,7 @@ class ApplicationWindow < Gosu::Window
   def close()
     Logger.warn("ApplicationWindow", "Closing application window.")
     shutdown_network()
+    dispose()
     super()
   end
 

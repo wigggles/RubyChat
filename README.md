@@ -70,60 +70,42 @@ Maximum theoretical size of a TCP packet is 64K (65535 bytes). Package size gets
 [Ruby Packed data](https://ruby-doc.org/3.2.2/packed_data_rdoc.html) \
 [How to use Ruby pack() unpack()](https://www.rubyguides.com/2017/01/read-binary-data)
 
-Integer Directive   | Array Element | Meaning
-:------------------:|:--------------|:--------------------------------------------------
-C         | Integer | 8-bit unsigned (unsigned char)
-S         | Integer | 16-bit unsigned, native endian (uint16_t)
-L         | Integer | 32-bit unsigned, native endian (uint32_t)
-Q         | Integer | 64-bit unsigned, native endian (uint64_t)
-‌‌          |         |
-c         | Integer | 8-bit signed (signed char)
-s         | Integer | 16-bit signed, native endian (int16_t)
-l         | Integer | 32-bit signed, native endian (int32_t)
-q         | Integer | 64-bit signed, native endian (int64_t)
-‌‌          |         |
-S_, S!    | Integer | unsigned short, native endian
-I, I_, I! | Integer | unsigned int, native endian
-L_, L!    | Integer | unsigned long, native endian
-‌‌          |         |
-s_, s!    | Integer | signed short, native endian
-i, i_, i! | Integer | signed int, native endian
-l_, l!    | Integer | signed long, native endian
-‌‌          |         |
-S> L> Q>  | Integer | same as the directives without ">" except
-s> l> q>  |         | big endian
-S!> I!>   |         | (available since Ruby 1.9.3)
-L!>       |         | "S>" is same as "n"
-s!> i!>   |         | "L>" is same as "N"
-l!>       |         |
-‌‌          |         |
-S< L< Q<  | Integer | same as the directives without "<" except
-s< l< q<  |         | little endian
-S!< I!<   |         | (available since Ruby 1.9.3)
-L!<       |         | "S<" is same as "v"
-s!< i!<   |         | "L<" is same as "V"
-l!<       |         |
-‌‌          |         |
-n         | Integer | 16-bit unsigned, network (big-endian) byte order
-N         | Integer | 32-bit unsigned, network (big-endian) byte order
-v         | Integer | 16-bit unsigned, VAX (little-endian) byte order
-V         | Integer | 32-bit unsigned, VAX (little-endian) byte order
-‌‌          |         |
-U         | Integer | UTF-8 character
-w         | Integer | BER-compressed integer
+Integer Directive   | Array Element |  Byte Size | Meaning
+:------------------:|:--------------|:----------:|:--------------------------------------------------
+C         | Integer |   1 byte  | 8-bit unsigned (unsigned char)
+S         | Integer |   2 byte  | 16-bit unsigned, native endian (uint16_t)
+L         | Integer |   4 byte  | 32-bit unsigned, native endian (uint32_t)
+Q         | Integer |   8 byte  | 64-bit unsigned, native endian (uint64_t)
+‌‌          |         |           | 
+c         | Integer |   1 byte  | 8-bit signed (signed char)
+s         | Integer |   2 byte  | 16-bit signed, native endian (int16_t)
+l         | Integer |   4 byte  | 32-bit signed, native endian (int32_t)
+q         | Integer |   8 byte  | 64-bit signed, native endian (int64_t)
+‌‌          |         |           | 
+S_, S!    | Integer |   2 byte  | unsigned short, native endian
+I, I_, I! | Integer |   4 byte  | unsigned int, native endian
+L_, L!    | Integer |  4/8 byte | unsigned long, native endian  (32 bit / 64 bit system)
+‌‌          |         |           | 
+s_, s!    | Integer |   2 byte  | signed short, native endian
+i, i_, i! | Integer |   2 byte  | signed int, native endian
+l_, l!    | Integer |   2 byte  | signed long, native endian
+‌‌          |         |           | 
+n         | Integer |   2 byte  | 16-bit unsigned, network (big-endian) byte order
+N         | Integer |   4 byte  | 32-bit unsigned, network (big-endian) byte order
+v         | Integer |   2 byte  | 16-bit unsigned, VAX (little-endian) byte order
+V         | Integer |   4 byte  | 32-bit unsigned, VAX (little-endian) byte order
+‌‌          |         |           | 
+U         | Integer |   1 byte  | UTF-8 character
+w         | Integer |  ~ bytes  | BER-compressed integer
+‌‌          |         |           | 
+D, d      | Float   |   8 byte  | double-precision, native format
+F, f      | Float   |   4 byte  | single-precision, native format
+E         | Float   |   8 byte  | double-precision, little-endian byte order
+e         | Float   |   4 byte  | single-precision, little-endian byte order
+G         | Float   |   8 byte  | double-precision, network (big-endian) byte order
+g         | Float   |   4 byte  | single-precision, network (big-endian) byte order
 
-
-Float Directive     |               | Meaning
-:------------------:|:--------------|:--------------------------------------------------
-D, d      | Float   | double-precision, native format
-F, f      | Float   | single-precision, native format
-E         | Float   | double-precision, little-endian byte order
-e         | Float   | single-precision, little-endian byte order
-G         | Float   | double-precision, network (big-endian) byte order
-g         | Float   | single-precision, network (big-endian) byte order
-
-
-String Directive    |               | Meaning
+String Directive    | Array Element | Meaning
 :------------------:|:--------------|:--------------------------------------------------
 A         | String  | arbitrary binary string (space padded, count is width)
 a         | String  | arbitrary binary string (null padded, count is width)
@@ -139,10 +121,10 @@ m         | String  | base64 encoded string (see RFC 2045, count is width)
 P         | String  | pointer to a structure (fixed-length string)
 p         | String  | pointer to a null-terminated string
 
-Misc. Directive     |               | Meaning
-:------------------:|:--------------|:--------------------------------------------------
-@         |         | moves to absolute position
-X         |         | back up a byte
-x         |         | null byte
+Misc. Directive     |            | Meaning
+:------------------:|:----------:|:--------------------------------------------------
+@                   |            | moves to absolute position
+X                   |            | back up a byte
+x                   |            | null byte
 
 [Table Source](https://rubydoc.info/stdlib/core/1.9.3/Array:pack)

@@ -24,7 +24,7 @@ class TCPclient
       end
     end
     # print additional information about session status
-    Logger.info("Client are addresses:"+
+    Logger.info("TCPclient", "Client is at addresses:"+
       "\n\tRemote: #{@@remote_ip}:#{Configuration::PORT}"+
       "\n\tLAN: #{@@local_ip}:#{Configuration::PORT}"+
       "\n\tlocalhost:#{Configuration::PORT}"
@@ -63,7 +63,7 @@ class TCPclient
     while incoming_data_package = @@client_session.await_data_msg()
       incoming_data_package.calculate_latency() # calculate client server latency
       time_stmp, from_user, srvr_time_stmp, data_mode, data = incoming_data_package.to_a()
-      Logger.info("TCPclient", "Recieved server package from: (#{@@session.username.inspect})")
+      Logger.info("TCPclient", "Recieved server package from: (#{from_user.inspect})")
       if Configuration::CLI_MODE
         if @@client_session.username == from_user
           puts("(me)> #{data}")
