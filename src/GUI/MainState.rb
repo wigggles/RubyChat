@@ -41,14 +41,15 @@ class MainState
   #---------------------------------------------------------------------------------------------------------
   # Called when action is used on TextField.
   def text_action(string = "")
-    #puts("DEBUG: MainState TextField return value: #{string}")
+    Logger.debug("MainState", "TextField return value: #{string}")
     if PACKAGE_MESSAGE_STRING
       data_package = @@parent_window.getNew_session_package()
       if data_package.nil?
-        puts("WARN: MainState TextField could not create a new session package for sending data.")
+        Logger.warn("MainState", "TextField could not create a new session package for sending data.")
         @console_box.push_text("> You are not currently connected to any server.") unless @console_box.nil?
       else
         data_package.pack_dt_string(string)
+        Logger.info("MainState", "TextField to send String session data package. (#{data_package.inspect})")
         @@parent_window.send_socket_data(data_package)
       end
     else
@@ -73,10 +74,10 @@ class MainState
       if @@game_world.is_a?(GameWorld)
         @@game_world.world_object_sync(package.object_data())
       else
-        puts("ERROR: MainState recieved an object data package but doesn't have an active GameWorld.")
+        Logger.error("MainState", "Recieved an object data package but doesn't have an active GameWorld.")
       end
     else
-      puts("ERROR: MainState recieved a data package set in a mode it doesn't know. (#{package.inspect})")
+      Logger.error("MainState", "Recieved a data package set in a mode it doesn't know. (#{package.inspect})")
       status_string = "!Malformed Data Package!"
     end
     # return status
@@ -87,11 +88,11 @@ class MainState
   def recieve_network_data(package)
     return if @@parent_window.nil?
     display_string = ""
-    #puts("DEBUG: MainState recieved network data (#{package.inspect})")
     case package
     when TCPSessionData::Package
       return if @@parent_window.current_session.nil?
       display_string = proccess_incoming_session_dataPackage(package)
+      Logger.info("MainState", "Recieved network packaged data (#{package.inspect})")
     when Array
       return if @@parent_window.current_session.nil?
       if package.length == TCPSessionData::Package::ARRAY_LENGTH
@@ -105,7 +106,7 @@ class MainState
     when String
       display_string = package
     else
-      puts("WARN: GUI malformed data passage. #{package.inspect}")
+      Logger.warn("MainState", "GUI malformed data passage. #{package.inspect}")
       display_string = "!!network data error!!"
     end
     # show the message in the UI by pushing the text into ConsoleBox component

@@ -4,6 +4,7 @@
 require 'socket'
 require 'gosu'
 
+require './src/internal/Logger.rb'
 require './src/internal/InputControls.rb'
 
 require './src/network/TCPSessionData.rb'
@@ -26,36 +27,36 @@ class ApplicationWindow < Gosu::Window
   @@service_mode = nil || :offline
 
   #---------------------------------------------------------------------------------------------------------
-  # Construct server and listen for/to clients
+  # Construct a server and listen for/to clients, or be a client and connect to a server.
   def initialize(is_server = false)
-    @initialized_later = 20
     GC.start()
+    @disposed = false
+    # create a new Gosu::Window
     super(Configuration::SCREEN_WIDTH, Configuration::SCREEN_HEIGHT, Configuration::FULLSCREEN)
     @@font = Gosu::Font.new(self, nil, 24)
     @@controls = InputControls.new(self)
     # create a new session socket manager
     @is_server = is_server
-    if is_server
-      @@service_mode = :tcp_server
-      start_server_service()
-    else
-      @username = ARGV[0] || "GosuGUI_01"
-      @@service_mode = :tcp_client
-    end
-    # anounce to gui that the server is listening
+    # start up the GUI's initial state manager
     set_app_state(MainState.new(self))
-    case @@service_mode
-    when :tcp_server
-      send_data_into_state("Server started, listening...")
-    when :tcp_client
-      #nothing
-    else
-      send_data_into_state("ERROR: unable to open socket. (#{@@service_mode})")
-    end
+    # delay the autostart of network services, this provides enough time for the GUI to be created
+    Thread.new {
+      sleep(0.5)
+      if is_server
+        @@service_mode = :tcp_server
+        start_server_service()
+      else
+        @username = ARGV[0] || "GosuGUI_01"
+        @@service_mode = :tcp_client
+        start_client_service() if @@service_mode == :tcp_client
+      end
+      # allow Logger to write into the '@application_state' if that Object has a method for it
+      Logger.bind_application_window(self) 
+    }
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Is the application acting as the server, also checks if its running a network session.
+  # Check if application is acting as the server, also checks if its running a network session.
   def is_server?
     if @is_server
       return false if current_session().nil?
@@ -65,19 +66,32 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Check if the application acting as a client, also checks if there is an active network session.
+  def is_client?
+    unless @is_server
+      return false if current_session().nil?
+      return true
+    end
+    return false
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  # If not already a client or running a server, start a new network server instance.
   def start_server_service()
     case @@service_mode
     when :tcp_server
       @server = TCPserver.new()
+      send_data_into_state("TCPServer started, listening...")
       Thread.new {
         @server.listen(self)
       }
     else
-      puts("ERROR: Unkown socket server type. (#{@@service_mode})")
+      Logger.error("ApplicationWindow", "Unkown socket server type. (#{@@service_mode})")
     end
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # If not a server or already a client, start a new network client instance.
   def start_client_service()
     send_data_into_state("Attempting to connect to server...")
     case @@service_mode
@@ -89,12 +103,11 @@ class ApplicationWindow < Gosu::Window
           start_client_session()
           @client.connect(self)
         else
-          #puts("ERROR: ApplicationWindow failed to start client session. (#{@client.error})")
-          send_data_into_state(@client.error.to_s)
+          Logger.error("ApplicationWindow", "Failed to start client session.")
         end
       }
     else
-      puts("ERROR: Unkown socket client type. (#{@@service_mode})")
+      Logger.error("ApplicationWindow", "Unkown socket client type. (#{@@service_mode})")
     end
   end
 
@@ -166,17 +179,18 @@ class ApplicationWindow < Gosu::Window
     when :tcp_server
       case data
       when TCPSessionData::Package
+        data.set_server_time()
         data_byte_string = data.get_packed_string()
       when String
         data_byte_string = current_session.package_data(data)
       else
-        puts("ERROR: ApplicationWindow server attempting to send unkown data type. (#{data.class})")
+        Logger.error("ApplicationWindow", "Server attempting to send unkown data type. (#{data.class})")
         return nil
       end
-      #puts("DEBUG: ApplicationWindow server sending data. (#{data.inspect})")
+      Logger.debug("ApplicationWindow", "Server sending data. (#{data.inspect})")
       return @server.send_bytes_to_everyone(data_byte_string, [], self)
     when :tcp_client
-      #puts("DEBUG: ApplicationWindow client sending data. (#{data.inspect})")
+      Logger.debug("ApplicationWindow", "Client sending data. (#{data.inspect})")
       return @client.send_data(data)
     else # :offline
       return nil
@@ -208,7 +222,7 @@ class ApplicationWindow < Gosu::Window
 
   #---------------------------------------------------------------------------------------------------------
   def close()
-    puts("WARN: Closing application window.")
+    Logger.warn("ApplicationWindow", "Closing application window.")
     shutdown_network()
     super()
   end
@@ -237,6 +251,13 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # If taking advantage of the Logger module, log strings can be shared into the GUI experience.
+  def logger_write(string_msg = "")
+    send_data_into_state(string_msg)
+    return true
+  end
+
+  #---------------------------------------------------------------------------------------------------------
   def send_data_into_state(data)
     return false if @@application_state.nil?
     @@application_state.recieve_network_data(data)
@@ -250,20 +271,34 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Gosu bindings for the operating system's running environment provide a 'tick()' which is used as a game
+  # clock. This clock loop is what checks for updates in a timley fasion. This clock should not be blocked.
   def update()
-    if @initialized_later > 0
-      @initialized_later -= 1
-    elsif @initialized_later == 0
-      start_client_service() if @@service_mode == :tcp_client
-      @initialized_later = -1
-    end
+    return if disposed?
+    # update the manager state and shared input controls
     @@application_state.update unless @@application_state.nil?
     @@controls.update() unless @@controls.nil?
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # To keep things robust and fluid, GUI states are handled independently of the ApplicationWindow. This
+  # provides the states for GarbageCollection in a simpler fasion. This also provides a way of changing states
+  # with ease, so if a state is a WorldMap or a Menu this transition/interaction can be handled by the Application.
   def draw()
     @@font.draw_text("FPS: #{Gosu.fps}", 16, 4, 0, 1, 1, 0xFF_ffffff)
     @@application_state.draw unless @@application_state.nil?
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  # Flag this class as being disposed of, which means it anounces do not use me, im getting rid of my things.
+  # This most notibly happens on and around shutdowns.
+  def dispose()
+    @disposed = true
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  # Return a boolean based on if this (self) Object has been flagged for cleanup.
+  def disposed?
+    return @disposed
   end
 end

@@ -97,7 +97,7 @@ class TextField
     test = @owner.send(@action, @text) || nil
     if test.nil?
       return false if @disposed 
-      puts("ERROR: '#{@action}' not found in #{@owner}\nEnsure to return true!")
+      Logger.error("TextField", "Callback method '#{@action}' in #{@owner} needs to return true.")
       return false
     end
     return true

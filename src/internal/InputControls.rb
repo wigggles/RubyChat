@@ -1,5 +1,5 @@
 #===============================================================================================================================
-# !!! InputControls.rb   |  Manages the button input across all classes.
+# !!! InputControls.rb   |  Manages the button input that allows mapping and additional check methods.
 #===============================================================================================================================
 class InputControls
 =begin
@@ -58,7 +58,7 @@ Changing schemes:
    $controls.Controls.delete(:Remove_Scheme)     -=- Removes control shceme from mapping.
    $controls.Controls[:New_Scheme] = [:buttons]  -=- Creates a new control scheme for mapping.
 --------------------------------------       --------------------------------------       --------------------------------------
-Most of the game input is wrapped into Chingu::Window dues to the way Gosu recives calls back a button key input it will pass it 
+Most of the game input is wrapped into Gosu::Window dues to the way Gosu recives calls back a button key input it will pass it 
   to Program ( @@parent_window ) class by the use of:
      
    + virtual void button_down(Gosu::Button) {}  +  Which is handed off to the same @@parent_window function name.
@@ -226,7 +226,7 @@ This and more information on Gosu C Headers can be found here:  https://www.libg
     return false if @@parent_window.nil?
     assigned_buttons = @@Controls[key_symbol]
     if assigned_buttons.nil?
-      puts("Control settings for (#{key_symbol}) where not found!")
+      puts("Control settings for (#{key_symbol}) were not found!")
       return false
     end
     #--------------------------------------
@@ -273,7 +273,7 @@ This and more information on Gosu C Headers can be found here:  https://www.libg
     unless id_only # using localized key mapping
       assigned_buttons = @@Controls[key_symbol]
       if assigned_buttons.nil?
-        puts("Control settings for (#{key_symbol}) where not found!")
+        puts("Control settings for (#{key_symbol}) were not found!")
         return false
       end
     else # used single key id instead
@@ -297,7 +297,7 @@ This and more information on Gosu C Headers can be found here:  https://www.libg
     unless id_only # using localized key mapping
       assigned_buttons = @@Controls[key_symbol]
       if assigned_buttons.nil?
-        puts("Control settings for (#{key_symbol}) where not found!")
+        puts("Control settings for (#{key_symbol}) were not found!")
         return false
       end
     else # used single key id instead

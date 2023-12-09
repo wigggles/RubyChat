@@ -1,9 +1,8 @@
 #===============================================================================================================================
 # !!!   Configuration.rb  | Provides initialization settings.
-#-----------------------------------------------------------------------------------------------------------------------------
-# Version 0.6
-# Date: 12/06/2023
-#-----------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
+# This is the first object to be loaded when launching the application. It contains common settings and methods.
+#
 # Due to the nature of external IPs it is typically required to touch a remote and obtain the result.
 # Below is a list of publically known 3rd party remote IP APIs.
 # http://whatismyip.akamai.com

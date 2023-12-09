@@ -82,7 +82,7 @@ class Button
     test = @owner.send(@action) || nil
     if test.nil?
       return false if @disposed
-      puts("ERROR: '#{@action}' not found in #{@owner}\nEnsure to return true!")
+      Logger.error("Button", "Callback method '#{@action}' in #{@owner} needs to return true.")
       return false
     end
     return true

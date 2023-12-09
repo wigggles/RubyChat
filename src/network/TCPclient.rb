@@ -15,22 +15,20 @@ class TCPclient
     begin
       @@tcpSocket = TCPSocket.new(server_ip, Configuration::PORT)
     rescue => error
+      @error = true
       case error
       when Errno::ECONNREFUSED
-        @error = "WARN: TCPclient reporting server connection refused."
+        Logger.warn("TCPclient", "Reporting server connection refused.")
       else
-        @error = error
+        Logger.error("TCPclient", "#{error}")
       end
-      puts(@error)
     end
-    
-    if Configuration::DEBUG
-      puts("Client are addresses:"+
-        "\n\tRemote: #{@@remote_ip}:#{Configuration::PORT}"+
-        "\n\tLAN: #{@@local_ip}:#{Configuration::PORT}"+
-        "\n\tlocalhost:#{Configuration::PORT}"
-      )
-    end
+    # print additional information about session status
+    Logger.info("Client are addresses:"+
+      "\n\tRemote: #{@@remote_ip}:#{Configuration::PORT}"+
+      "\n\tLAN: #{@@local_ip}:#{Configuration::PORT}"+
+      "\n\tlocalhost:#{Configuration::PORT}"
+    )
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -63,8 +61,9 @@ class TCPclient
   def receive_from_server(parent_window = nil)
     return unless @error.nil?
     while incoming_data_package = @@client_session.await_data_msg()
-      time_stmp, from_user, data_mode, data = incoming_data_package.to_a()
-      #puts("#{@@session.username.inspect} #{from_user.inspect}")
+      incoming_data_package.calculate_latency() # calculate client server latency
+      time_stmp, from_user, srvr_time_stmp, data_mode, data = incoming_data_package.to_a()
+      Logger.info("TCPclient", "Recieved server package from: (#{@@session.username.inspect})")
       if Configuration::CLI_MODE
         if @@client_session.username == from_user
           puts("(me)> #{data}")
@@ -74,7 +73,7 @@ class TCPclient
       elsif parent_window
         parent_window.send_data_into_state(incoming_data_package)
       else
-        puts("ERROR: TCPclient recieved data from the server but has no way to display it.")
+        Logger.error("TCPclient", "Recieved data from the server but has no way to display it.")
       end
     end
   end
@@ -93,13 +92,13 @@ class TCPclient
     return if @error
     case data
     when String
-      #puts("DEBUG: TCPclient sending String data.")
+      Logger.debug("TCPclient", "Sending String data.")
       data = data.chomp()
     when TCPSessionData::Package
-      #puts("DEBUG: TCPclient sending TCPSessionData::Package data.")
-      #do nothing
+      Logger.debug("TCPclient", "Sending TCPSessionData::Package data.")
+      data.set_creation_time()
     else
-      puts("ERROR: TCPclient attempting to send data type it doesnt recognize. (#{data.class})")
+      Logger.error("TCPclient", "Attempting to send data type it doesnt recognize. (#{data.class})")
       return nil
     end
     @@client_session.send_msg(data)

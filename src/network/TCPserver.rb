@@ -14,14 +14,15 @@ class TCPserver
     @@tcpSocket = TCPServer.new(Configuration::PORT)
     @@remote_ip, @@local_ip = Configuration.getSelfIP()
     @@server_session = TCPSessionData.new(@@tcpSocket, "ServerHost")
-
-    if Configuration::DEBUG
-      puts("Server is now accepting new clients at addresses:"+
-        "\n\tRemote: #{@@remote_ip}:#{Configuration::PORT}"+
-        "\n\tLAN: #{@@local_ip}:#{Configuration::PORT}"+
-        "\n\tlocalhost:#{Configuration::PORT}"
-      )
-    end
+    # When network session packages are validated from a client, should the server kick clients when
+    # the package data is found to be invalid?
+    @drop_clients_on_package_error = false
+    # print additional information about session status
+    Logger.info("Server is now accepting new clients at addresses:"+
+      "\n\tRemote: #{@@remote_ip}:#{Configuration::PORT}"+
+      "\n\tLAN: #{@@local_ip}:#{Configuration::PORT}"+
+      "\n\tlocalhost:#{Configuration::PORT}"
+    )
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -46,25 +47,21 @@ class TCPserver
   def session_thread_handle(session, parent_window)
     # string data sent first is the client's session information
     session_init_data = session.await_data_msg()
-    #puts("#{session_init_data.inspect}")
+    Logger.debug("TCPserver", "New client: (#{session_init_data.inspect})")
     creation_time, null_client_id, server_time, package_mode, requested_name = session_init_data.to_a()
     duplicate_user = nil
     # prevent same usernames between multiple clients
     if find_client(requested_name)
       outgoing_data = @@server_session.package_data("REUSED: Name '#{requested_name}' is already in use.")
       session.send_msg(outgoing_data, false)
-      duplicate_user = "WARN: Duplicate user '#{requested_name}' tried to join."
-      if Configuration::CLI_MODE
-        puts(duplicate_user)
-      elsif parent_window
-        parent_window.send_data_into_state(duplicate_user)
-      end
+      duplicate_user = requested_name
+      Logger.warn("TCPServer", "Duplicate user '#{requested_name}' tried to join.")
     else
       # watch the client session for incoming data
       session.username = requested_name
       outgoing_data = @@server_session.package_data("Hello #{session.username}! #{@@client_sessions.count} clients.")
       session.send_msg(outgoing_data, false)
-      puts("Sending a server welcome to client session id: (#{session.username})")
+      Logger.debug("TCPserver", "Sending a server welcome to client session id: (#{session.username})")
       outgoing_data = @@server_session.package_data("#{session.username} joined! #{@@client_sessions.count} clients.")
       send_bytes_to_everyone(outgoing_data, [session.username], parent_window)
       # while connection remains open, read sent information and then forward it to clients
@@ -83,8 +80,9 @@ class TCPserver
           package_error = true
         end
         if package_error
-          puts("WARN: Server recieved a message from a client malformed. (#{incoming_data_byteString.inspect})")
-          break # stop listening to that client
+          Logger.warn("TCPServer", "Recieved a message from a client malformed. (#{incoming_data_byteString.inspect})")
+          # stop listening to that client and kick them from the server
+          break if @drop_clients_on_package_error
         end
       end
     end
@@ -103,16 +101,22 @@ class TCPserver
   #---------------------------------------------------------------------------------------------------------
   # Send information to all clients connected, unless excluded from the send.
   def send_bytes_to_everyone(sessionData_byteString, exclusions = [], parent_window = nil)
-    #puts("TCPserver is sending subscribed clients (#{sessionData_byteString.inspect})")
+    Logger.debug("TCPserver", "Sending to subscribed clients object (#{sessionData_byteString.inspect})")
     @@client_sessions.each {|session|
+      #sleep(0.5) # add artificial latency
       unless exclusions.include?(session.username)
         session.send_msg(sessionData_byteString, false)
       end
     }
     # also display at local server interface application
     data_package = @@server_session.unpackage_data(sessionData_byteString)
-    #puts("DEBUG: TCPserver is echoing to self what it sent.\n#{sessionData_byteString.inspect}\n(#{data_package.inspect})")
+    data_package.calculate_latency() # calculate local server's client latency values
     parent_window.send_data_into_state(data_package) if parent_window
+    Logger.info("TCPserver", 
+      "Echo to self what was sent."+
+      "\n#{sessionData_byteString.inspect}"+
+      "\n(#{data_package.inspect})\n\n"
+    )
     # CLI mode prints
     return unless Configuration::CLI_MODE
     time_stmp, from_user, data_mode, data = data_package.to_a()

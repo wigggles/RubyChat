@@ -20,7 +20,7 @@ class GameWorld
   # Create a new WorldObject and add it into the update and draw loops.
   def create_object(options = {})
     if @objects.keys.size() >= GameWorld::MAX_OBJECTS
-      puts("WARN: #{self.class} has reached the maximum number of WorldObjects. (#{GameWorld::MAX_OBJECTS})")
+      Logger.warn("GameWorld", "(#{self.class}) has reached the maximum number of WorldObjects. (#{GameWorld::MAX_OBJECTS})")
     else
       new_object = WorldObject.new(self, options)
       @objects[new_object.ref_id] = new_object
@@ -55,13 +55,13 @@ class GameWorld
       @@parent_window.send_socket_data(data_package)
       return true
     end
-    puts("WARN: Only the server can update world objects.")
+    Logger.warn("GameWorld", "Only the server can update world objects.")
     return nil
   end
   #---------------------------------------------------------------------------------------------------------
   # There has been an update to an object, reflect changes to this local client instance.
   def world_object_sync(object_package)
-    puts("DEBUG: MainState is syncing an object with a package. (#{object_package.inspect})")
+    Logger.debug("GameWorld", "Is syncing an object with a package. (#{object_package.inspect})")
   end
   #---------------------------------------------------------------------------------------------------------
   def update()
