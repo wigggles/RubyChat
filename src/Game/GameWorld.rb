@@ -64,6 +64,11 @@ class GameWorld
     Logger.debug("GameWorld", "Is syncing an object with a package. (#{object_package.inspect})")
   end
   #---------------------------------------------------------------------------------------------------------
+  # There has been an update to the world, reflect changes to this local client instance.
+  def world_sync(world_package)
+    Logger.debug("GameWorld", "Is syncing the world with a package. (#{world_package.inspect})")
+  end
+  #---------------------------------------------------------------------------------------------------------
   def update()
     return if @@parent_state.nil? || @disposed
     @objects.each { |ref_id, world_object|

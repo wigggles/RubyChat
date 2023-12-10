@@ -13,6 +13,7 @@ require './src/network/TCPserver.rb'
 require './src/network/TCPclient.rb'
 
 require './src/GUI/Components/Button.rb'
+require './src/GUI/Components/CheckBox.rb'
 require './src/GUI/Components/TextField.rb'
 require './src/GUI/Components/ConsoleBox.rb'
 require './src/GUI/MainState.rb'

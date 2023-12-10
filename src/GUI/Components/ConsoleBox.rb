@@ -17,7 +17,7 @@ class ConsoleBox
     @bgcolor = 0xFF_6c6c6c   #DV Background color used to fill viewing Rect.
     font_size = options[:font_size] || 18
     @font = Gosu::Font.new(parent_window, "verdana", font_size)
-    max_char_width = @font.text_width("W", 0.5).round()
+    max_char_width = @font.text_width("W").round() * 0.5
     @line_width = (@width / max_char_width).round() #DV Max characters in a line before wrapping.
     @viewable_text = []
     @prevous_text = ""

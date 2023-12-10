@@ -2,8 +2,8 @@
 # !!!  BlobDraw.rb |  Draw extended shapes and cache the pixles into an image blob for drawing later.
 #===============================================================================================================================
 module BlobDraw
-  SOLID_PIXEL = 0xff.chr()
-  CLEAR_PIXEL = 0x00.chr()
+  SP = 0xff.chr() # Solid Pixel
+  CP = 0x00.chr() # Clear pixel
   # Color is not set here out side of gray scale. The main color is set when the cached blob image is drawn.
   OUTLINE_COLOR = 0xFF_ffffff
   FILL_COLOR    = 0xFF_cccccc
@@ -63,15 +63,14 @@ module BlobDraw
       end
     #--------------------------------------
     when :circle
+      opt[:width]  = opt[:radius] * 2
+      opt[:height] = opt[:radius] * 2
       if opt[:outline]
         return Gosu::Image.new(Circle.new(opt))
       elsif opt[:outlined]
         outline = Gosu::Image.new(Circle.new(opt))
-        opt[:width]  -= (opt[:thickness] * 2)
-        opt[:height] -= (opt[:thickness] * 2)
+        opt[:radius] -= opt[:thickness]
         fill = Gosu::Image.new(Circle.new(opt))
-        opt[:width]  += (opt[:thickness] * 2)
-        opt[:height] += (opt[:thickness] * 2)
         image_blob ||= Gosu::render(opt[:width], opt[:height], retro: true) do 
           outline.draw(0, 0, 0, 1.0, 1.0, BlobDraw::OUTLINE_COLOR)
           fill.draw(opt[:thickness], opt[:thickness], 0, 1.0, 1.0, BlobDraw::FILL_COLOR)
@@ -96,14 +95,14 @@ module BlobDraw
         if opt[:outline]
           x = @columns / 2
           x_skip = y > opt[:thickness] ? opt[:thickness] : x
-          right_half = "#{BlobDraw::CLEAR_PIXEL * (x - x_skip)}#{BlobDraw::SOLID_PIXEL * x_skip}"
+          right_half = "#{BlobDraw::CP * (x - x_skip)}#{BlobDraw::SP * x_skip}"
         else
-          right_half = "#{BlobDraw::SOLID_PIXEL * (@columns / 2)}"
+          right_half = "#{BlobDraw::SP * (@columns / 2)}"
         end
         right_half.reverse + right_half
       }.join()
       alpha_channel = lower_half + lower_half.reverse
-      @blob = alpha_channel.gsub(/./) { |alpha| BlobDraw::SOLID_PIXEL * 3 + alpha }
+      @blob = alpha_channel.gsub(/./) { |alpha| BlobDraw::SP * 3 + alpha }
     end
     def to_blob(); @blob; end
   end
@@ -112,7 +111,6 @@ module BlobDraw
   class RoundRectangle
     attr_reader :columns, :rows
     def initialize(opt = {})
-      puts(opt.inspect)
       @columns = opt[:width]
       @rows    = opt[:height]
       radius   = [[opt[:radius], 2].max(), @rows].min()
@@ -123,32 +121,42 @@ module BlobDraw
         r = radius - 2 if r >= radius
         if opt[:outline]
           x_skip = y > opt[:thickness] ? opt[:thickness] : x - r
-          left_half = "#{BlobDraw::CLEAR_PIXEL * r}#{BlobDraw::SOLID_PIXEL * x_skip}#{BlobDraw::CLEAR_PIXEL * (x - x_skip - r)}"
+          left_half = "#{BlobDraw::CP * r}#{BlobDraw::SP * x_skip}#{BlobDraw::CP * (x - x_skip - r)}"
         else
-          left_half = "#{BlobDraw::CLEAR_PIXEL * r}#{BlobDraw::SOLID_PIXEL * (x - r)}"
+          left_half = "#{BlobDraw::CP * r}#{BlobDraw::SP * (x - r)}"
         end
         left_half + left_half.reverse
       }.join()
       alpha_channel = top_half + top_half.reverse
-      @blob = alpha_channel.gsub(/./) { |alpha| BlobDraw::SOLID_PIXEL * 3 + alpha }
+      @blob = alpha_channel.gsub(/./) { |alpha| BlobDraw::SP * 3 + alpha }
     end
     def to_blob(); @blob; end
   end
   #---------------------------------------------------------------------------------------------------------
-  # How to draw a circle.
+  # How to draw a circle. When drawing an outline only, it wont do it very well tends to have a flat bottom.
   class Circle
     attr_reader :columns, :rows
     def initialize(opt = {})
-      radius = opt[:radius]
-      @columns = @rows = radius * 2
+      r = opt[:radius]
+      @columns = @rows = r * 2
       # start drawing
-      lower_half = (0...radius).map() { |y|
-        x = Math.sqrt(radius ** 2 - y ** 2).round()
-        right_half = "#{BlobDraw::SOLID_PIXEL * x}#{BlobDraw::CLEAR_PIXEL * (radius - x)}"
+      lower_half = (0...r).map() { |y|
+        x = Math.sqrt(r ** 2 - y ** 2).round()
+        if opt[:outline]
+          sx = Math.sqrt(r ** 2 - y ** 2).round() - Math.sqrt(opt[:thickness] ** 2).round()
+          sx = 0 if sx < 0
+          if y >= r - opt[:thickness]
+            right_half = "#{BlobDraw::SP * x}#{BlobDraw::CP * (r - x)}"
+          else
+            right_half = "#{BlobDraw::CP * sx}#{BlobDraw::SP * (x - sx)}#{BlobDraw::CP * (r - x)}"
+          end
+        else
+          right_half = "#{BlobDraw::SP * x}#{BlobDraw::CP * (r - x)}"
+        end
         right_half.reverse + right_half
       }.join()
       alpha_channel = lower_half.reverse + lower_half
-      @blob = alpha_channel.gsub(/./) { |alpha| BlobDraw::SOLID_PIXEL * 3 + alpha }
+      @blob = alpha_channel.gsub(/./) { |alpha| BlobDraw::SP * 3 + alpha }
     end
     def to_blob(); @blob; end
   end

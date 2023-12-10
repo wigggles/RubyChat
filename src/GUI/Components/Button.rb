@@ -3,6 +3,8 @@
 #===============================================================================================================================
 class Button
   @@parent_window = nil
+
+  ACTION_TIMEOUT = 10
   
   attr_accessor :x, :y, :color, :hcolor, :text
   #---------------------------------------------------------------------------------------------------------
@@ -16,16 +18,21 @@ class Button
     @text = options[:text] || ''
     font_size = options[:font_size] || 24
     @font = Gosu::Font.new(parent_window, "verdana", font_size)
-    @width  = options[:width]  || @font.text_width(@text, 1.0).round()
-    @height = options[:height] || font_size * 2
     @box_edge_buf = font_size #DV Add a little to the box so not touching text on edges.
-    @width += (@box_edge_buf * 2)
+    if @width.nil?
+      @width  = options[:width]  || @font.text_width(@text).round()
+      @width += (@box_edge_buf * 2)
+    end
+    if @height.nil?
+      @height = options[:height] || font_size * 2
+    end
     # set working colors
     color = options[:color] || [Gosu::Color.argb(0xff_6633ff), Gosu::Color.argb(0xff_cc3355)]
     @color  = color[0] #DV Red, Green, Blue, Alpha (00, 00, 00, 00) (ff, ff, ff, ff)
     @hcolor = color[1] #DV Mouse over box hover color
     @is_highlighted = false
     @is_depresed = false
+    @has_actioned = false
     # setup call method for action
     @owner = options[:owner] || nil
     if @owner.nil?
@@ -33,13 +40,37 @@ class Button
       return nil
     end
     @action = options[:action] || nil
+    @action_timeout = Button::ACTION_TIMEOUT
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Update loop for button behaviors.
   def update()
     return if @disposed || @@parent_window.nil?
-    return unless mouse_hover?()
-    action() if @@parent_window.controls.trigger?(:mouse_lclick)
+    if @action_timeout > 0
+      @is_highlighted = false
+      @action_timeout -= 1
+      return     
+    end
+    mouse_hover?()
+    if @has_actioned
+      @is_highlighted = false
+      unless @@parent_window.controls.holding?(:mouse_lclick)
+        @has_actioned = false
+        @is_depresed = false
+      end
+    else
+      if @is_highlighted
+        if @is_depresed
+          unless @@parent_window.controls.holding?(:mouse_lclick)
+            action()
+          end
+        elsif @@parent_window.controls.trigger?(:mouse_lclick)
+          @is_depresed = true 
+        end
+      else
+        @is_depresed = false
+      end
+    end
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Check to see if the mouse is on-top of the button, then if it is, update sprite actions.
@@ -90,8 +121,7 @@ class Button
   #D Try first to catch errors, and call function from parent class user.
   def action()
     return false unless @is_highlighted
-    return true if @is_depresed
-    @is_depresed = true
+    return true if  @has_actioned
     if @action.nil?
       print("There is an error with button\n #{text}\n In: #{@owner}")
       return false
@@ -103,6 +133,8 @@ class Button
       Logger.error("Button", "Callback method '#{@action}' in #{@owner} needs to return true.")
       return false
     end
+    @has_actioned = true
+    @action_timeout = Button::ACTION_TIMEOUT
     return true
   end
   #---------------------------------------------------------------------------------------------------------

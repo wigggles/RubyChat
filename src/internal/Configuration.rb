@@ -26,8 +26,8 @@ module Configuration
   CLI_MODE   = false  # Use comand line interface, or 'false' for Gosu GUI.
   FULLSCREEN = false
   module ResolutionModes
-    DESK_HDLRG = [1920, 1080]
-    DESK_HDLRG = [1366,  768]
+    DESK_HDMED = [1920, 1080]
+    DESK_HDSML = [1366,  768]
     DESK_LRG   = [1280, 1024]
     DESK_MED   = [1024,  768]
     DESK_SML   = [ 640,  480]

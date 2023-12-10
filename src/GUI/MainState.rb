@@ -27,6 +27,10 @@ class MainState
         text: "Spam 5",
         owner: self, action: :button_action,
         x: @@parent_window.width - 4, y: 4, align: :right
+      }),
+      CheckBox.new(parent_window, {
+        owner: self, action: :checkbox_action, radius: 12,
+        x: @@parent_window.width - 24, y: 72, align: :center
       })
     ]
     # set the default game world
@@ -58,6 +62,12 @@ class MainState
       @console_box.push_text("> You are not currently connected to any server.") unless @console_box.nil?
     end
     return data_package
+  end
+  #---------------------------------------------------------------------------------------------------------
+  # Called when action is used on a CheckBox.
+  def checkbox_action(state = false)
+    Logger.info("MainState", "CheckBox was toggled. (#{state.inspect})")
+    return true
   end
   #---------------------------------------------------------------------------------------------------------
   # Called when action is used on a Button.
@@ -129,18 +139,9 @@ class MainState
       return if @@parent_window.current_session.nil?
       display_string = proccess_incoming_session_dataPackage(package)
       Logger.info("MainState", "Recieved network packaged data (#{package.inspect})")
-    when Array
-      return if @@parent_window.current_session.nil?
-      if package.length == TCPSessionData::Package::ARRAY_LENGTH
-        session_start_time, from_user, message = package
-        if @@parent_window.current_session.username == from_user
-          display_string = "(me)> #{message}"
-        else
-          display_string = "(#{from_user})> #{message}"
-        end
-      end
     when String
       display_string = package
+      Logger.info("MainState", "Recieved network raw string data (#{package.inspect})")
     else
       Logger.warn("MainState", "GUI malformed data passage. #{package.inspect}")
       display_string = "!!network data error!!"
