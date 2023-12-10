@@ -1,7 +1,36 @@
 #===============================================================================================================================
 # !!!  Tests.rb |  Run a few tests.
 #===============================================================================================================================
+require './src/internal/Configuration.rb'
+
 module Tests
+  MAX_NEW_ID_TRYS = 100_000
+  #---------------------------------------------------------------------------------------------------------
+  # Generate a bunch of new id's and check to see if any duplicates are found.
+  def self.test_random_ids()
+    puts("Checking if able to reliably generate random ids.")
+    trys = 0
+    ids  = []
+    dupe = false
+    new_id = nil
+    while !dupe
+      new_id = Configuration.generate_new_ref_id()
+      puts("loop #{trys} id: (#{new_id})") if (trys % 10_000) == 0
+      if ids.include?(new_id)
+        dupe = true
+        break
+      else
+        ids << new_id
+      end
+      trys = ids.size
+      break if trys >= MAX_NEW_ID_TRYS
+    end
+    if dupe
+      puts("Found a dupe id generated in #{trys} trys for (#{new_id}).")
+    else
+      puts("Tried #{trys} times but did not find any duplicate ids.")
+    end
+  end
   #---------------------------------------------------------------------------------------------------------
   # Figure out what the best way of packaging a Time object is.
   def self.test_time()
@@ -22,7 +51,7 @@ module Tests
     puts("(#{hex_unpacked.inspect})")
   end
   #---------------------------------------------------------------------------------------------------------
-  def test_packing_time(time_object)
+  def self.test_packing_time(time_object)
     %w(d D f F e E g G q Q).each { |flag|
       puts("Using mode: (#{flag})")
       packaged, unpacked = test_pack_mode(flag, time_object)
@@ -32,11 +61,11 @@ module Tests
     }
   end
   #---------------------------------------------------------------------------------------------------------
-  def test_pack_mode(flag, use_time)
+  def self.test_pack_mode(flag, use_time)
     case flag
     when 'q', 'Q'
       packaged = [use_time.to_f * 10000000].pack(flag)
-      unpacked = packaged.unpack(flag) / 10000000
+      unpacked = packaged.unpack(flag).first() / 10000000
     else # normal float
       packaged = [use_time.to_f].pack(flag)
       unpacked = packaged.unpack(flag)
@@ -49,5 +78,6 @@ puts("Running some tests:")
 
 Tests.test_time()
 Tests.test_hex_pacakge()
+Tests.test_random_ids()
 
 puts("Tests have finished.")

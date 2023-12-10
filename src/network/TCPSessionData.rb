@@ -34,11 +34,11 @@ class TCPSessionData
     #    n    | 2-byte signed   | mode integer.
     #    a*   | take whats left | an arbritray length 'message' as a byte string value.
     #--------------------------------------
-    BYTE_OBJECT = "L L L n a*"
+    BYTE_OBJECT = "Z10 L L n a*"
     OBJECT_LENGTH = 5
     # After using the BYTE_STRING to define common data, perform additonal proccessing.
     #
-    #    L    | 4-byte unsigned | object refrence ID.
+    #    Z10  | 10 char bytes   | object refrence ID.
     #    L    | 4-byte unsigned | object X world position.
     #    L    | 4-byte unsigned | object Y world position.
     #    n    | 2-byte signed   | type integer.

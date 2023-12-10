@@ -46,4 +46,19 @@ module Configuration
     local_ip = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
     return [remote_ip, local_ip]
   end
+
+  #---------------------------------------------------------------------------------------------------------
+  # Attempt to generate new unique ids, uses a time based float. By defualt this id will be a String hex value.
+  def self.generate_new_ref_id(as_string = true)
+    # Generate a new id as a large 8 byte value which will be clamped down to 4 bytes
+    # 42,949,672,950 is the maximum size of a 4 byte unsigned integer
+    new_id = ((Time.now.to_f() * 100_000_000_000).round() % 1_000_000_000_000_000_000)
+    new_id = new_id % 42_949_672_950
+    # If using a semi human readable id that was generated, it needs to be at least 10 byte characters.
+    if as_string
+      new_id = new_id.to_s(16).rjust(10, rand(0..10).to_s)
+      new_id = new_id[0..10]
+    end
+    return new_id
+  end
 end
