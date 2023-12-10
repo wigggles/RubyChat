@@ -53,6 +53,8 @@ class TCPserver
     Logger.debug("TCPserver", "New client: (#{session_init_data.inspect})")
     creation_time, null_client_id, server_time, package_mode, requested_name = session_init_data.to_a()
     duplicate_user = nil
+    # client names/ids should not be raw bytes, so enforce some encoding limitations for the string requested
+    requested_name = requested_name.encode(Encoding::ASCII, undef: :replace, invalid: :replace, replace: "")
     # prevent same usernames between multiple clients
     if find_client(requested_name)
       duplicate_user = requested_name

@@ -3,8 +3,16 @@
 #===============================================================================================================================
 class TCPSessionData
   attr_accessor :username
-
+  #--------------------------------------
+  # Option to send raw byte strings instead of inflating by a factor of two and sending a hex string representation.
+  # If you can manage to avoid end-line flags when packaging raw data then you can use raw strings. Otherwise its
+  # recomended you instead send a string of characters to represent these bytes which later can be turned back into
+  # a byte string where ever the network message is recieved. This means instead of a message of 1024 bytes, you 
+  # can send a message of 512 bytes for a maximum payload size.
+  USE_RAW_STRING_PACKAGE = false  # ** Default is 'false'.
+  #--------------------------------------
   FORCE_ENCODING = Encoding::ASCII_8BIT
+  # nil
   # Encoding::UTF_8
   # Encoding::ASCII
   # Encoding::ASCII_8BIT
@@ -36,10 +44,18 @@ class TCPSessionData
     #    n    | 2-byte signed   | type integer.
     #    a*   | take whats left | an arbritray length byte string.
     #--------------------------------------
+    BYTE_MAPSYNC = "n a*"
+    MAPSYNC_LENGTH = 2
+    # After using the BYTE_STRING to define common data, perform additonal proccessing.
+    #
+    #    n    | 2-byte signed   | type integer.
+    #    a*   | take whats left | an arbritray length byte string.
+    #--------------------------------------
     # It's crude but effective to count up using constants.
     module DATAMODE
-      STRING = 0    # This mode is the basic one, it just uses the string as a string.
-      OBJECT = 1    # This mode performs additional variable proccessing for generic data.
+      STRING   = 0    # This mode is the basic one, it just uses the string as a string.
+      OBJECT   = 1    # This mode performs additional variable proccessing for generic data.
+      MAP_SYNC = 2    # This mode is data from the server that is related to a GameWorld.
     end
     #--------------------------------------
     # Knowing the data is half the battle, validate package DATAMODE is being utilized properly.
@@ -59,6 +75,10 @@ class TCPSessionData
       when DATAMODE::OBJECT
         return false unless @data.is_a?(Array)
         return false unless @data.length == Package::OBJECT_LENGTH
+        return true
+      when DATAMODE::MAP_SYNC
+        return false unless @data.is_a?(Array)
+        return false unless @data.length == Package::MAPSYNC_LENGTH
         return true
       end
       # @data_mode is of an unknown type
@@ -135,6 +155,15 @@ class TCPSessionData
       }
     end
     #--------------------------------------
+    # If package is in @data_mode DATAMODE::MAP_SYNC bring order to the Array in @data.
+    def mapsync_data()
+      return nil if @data_mode != DATAMODE::MAP_SYNC
+      return {
+        packtype: @data[0],
+        map_data: @data[1]
+      }
+    end
+    #--------------------------------------
     # Basically all traffic is a single string, packaging bytes in ways you can unpackage in order later.
     # This is not typically called on its own, but used for 'pack_dt' methods.
     def make_byte_string()
@@ -170,26 +199,36 @@ class TCPSessionData
       return make_byte_string()
     end
     #--------------------------------------
+    # If data type is for syncing the map data between client sessions.
+    def pack_dt_mapSync(data_array = nil)
+      set_creation_time()
+      @data_mode = DATAMODE::MAP_SYNC
+      if data_array.nil?
+        packtype, map_data = @data
+      else
+        packtype, map_data = data_array
+      end
+      # package the objects data into a byte sting that becomes the string message
+      @data = [packtype, map_data].pack(Package::BYTE_MAPSYNC)
+      # after packaging the data Array, package the entire message for sending over network
+      return make_byte_string()
+    end
+    #--------------------------------------
     # Depending on defined mode get the data package byte string. This string is ready to send over socket sessions.
     def get_packed_string(data_mode = nil, for_data = nil)
       @data_mode = data_mode unless data_mode.nil?
       @data = for_data unless for_data.nil?
       case @data_mode
       when DATAMODE::STRING
-        case @data
-        when String
-          return pack_dt_string()
-        else
-          Logger.error("TCPSessionData::Package", "In String mode but did not recieve a String.")
-        end
+        return pack_dt_string() if @data.is_a?(String)
+        Logger.error("TCPSessionData::Package", "In STRING mode but did not recieve a String.")
       when DATAMODE::OBJECT
-        case @data
-        when Array
-          return pack_dt_object()
-        else
-          Logger.error("TCPSessionData::Package", "In Object mode but did not recieve an Array.")
-        end
-      else
+        return pack_dt_object() if @data.is_a?(Array)
+        Logger.error("TCPSessionData::Package", "In OBJECT mode but did not recieve an Array.")
+      when DATAMODE::MAP_SYNC
+        return pack_dt_mapSync() if @data.is_a?(Array)
+        Logger.error("TCPSessionData::Package", "In MAP_SYNC mode but did not recieve an Array.")
+      else # data mode is not defined
         Logger.warn("TCPSessionData::Package", "In an unkown data mode. #{@data_mode.class}")
         return nil
       end
@@ -203,12 +242,12 @@ class TCPSessionData
       # validate this new Array has the correct data form
       begin
         ct_time = (data_array[0] / 10000000.0)
-        @created_time     = Time.at(ct_time)                    # local time message was created
-        @user_id          = data_array[1].chomp().delete("\00") # client_id with byte padding removed
+        @created_time     = Time.at(ct_time)            # local time message was created
+        @user_id          = data_array[1].delete("\00") # client_id with byte padding removed
         sv_time = (data_array[2] / 10000000.0)
-        @srvr_time_stmp   = Time.at(sv_time)                    # time from server
-        @data_mode        = data_array[3].to_i                  # extra data packaging mode
-        @data             = data_array[4].chomp()               # extra/rest of data bytes sent
+        @srvr_time_stmp   = Time.at(sv_time)            # time from server
+        @data_mode        = data_array[3].to_i          # extra data packaging mode
+        @data             = data_array[4]               # extra/rest of data bytes sent
       rescue => error
         Logger.error("TCPSessionData::Package", "Issue during unpacking byte string:"+
           "\nRaw: (#{byte_string.inspect})"+
@@ -338,9 +377,30 @@ class TCPSessionData
 
   #---------------------------------------------------------------------------------------------------------
   # Try catch error for sending with socket so application doens't crash if it fails to put sting data.
+  # All outgoing data flows through here when using a TCPSessionData object.
   def socket_puts(string)
+    # do some checks on the argument provided before proceeding
+    unless string.is_a?(String)
+      Logger.error("TCPSessionData", "Can only Socket.puts String objects.")
+      return false
+    end
+    if string.length > (TCPSessionData::USE_RAW_STRING_PACKAGE ? 512 : 1024) # max bytes able to send
+      Logger.error("TCPSessionData", "Socket.puts String is too large to send.")
+      return false
+    end
+    # attempt to send the message over network
     begin
-      @socket.puts(string)
+      if TCPSessionData::USE_RAW_STRING_PACKAGE
+        # Sending the raw bytes string does have random chance of an inproperly schedualed end-line flag.
+        # An end-line string flag "\n" marks where a socket message stops. I think you can see the issue...
+        @socket.puts(string)
+      else
+        # Convert the string of characters into an array, then pack that array into a string for a hex representation of
+        # those byte characters. Doing this prevents the chances of sending bytes used internally for networks. The down
+        # side of doing this is that the message size is halfed as it takes two characters to show a hex value for a byte.
+        @socket.puts(string.bytes.pack("c*").unpack("H*").first())
+      end
+    # catch errors and if known to not be critical, handle in a safe way
     rescue => error
       case error
       when Errno::EPIPE
@@ -354,15 +414,26 @@ class TCPSessionData
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Is blocking function, wait for server message. * CLI only
+  # Is blocking function, wait for a connected network session message. All incoming data flows through here.
   def await_data_msg(use_package = true)
     return nil if closed?
     begin
+      # when a new message arives, remove the end-line flag of the string recieved
       response_string = @socket.gets()
+      raise SocketClosedException.new() if response_string.nil?
+      response_string.chomp() # <- always remove the messages end-line flag.
+      # instead of sending raw bytes in the string message, send a hex string representating these bytes,
+      # this requires an extra step in packaging the data if enabled and also doubles the sending string's size.
+      unless TCPSessionData::USE_RAW_STRING_PACKAGE
+        response_string = [response_string].pack('H*')
+      end
     rescue => error
       case error
       when Errno::ECONNRESET
         Logger.debug("TCPSessionData", "Client forcibly closed connection.")
+        return nil
+      when SocketClosedException
+        Logger.debug("TCPSessionData", "Server forcibly closed connection.")
         return nil
       else
         Logger.error("TCPSessionData", "Read: #{error}")
@@ -399,5 +470,13 @@ class TCPSessionData
   # Check if the socket it still in use.
   def closed?
     return @socket.nil?
+  end
+
+#===============================================================================================================================
+  class SocketClosedException < StandardError
+    def initialize(msg="Socket has reported back that it is closed.", exception_type="custom")
+      @exception_type = exception_type
+      super(msg)
+    end
   end
 end

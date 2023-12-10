@@ -106,6 +106,12 @@ class MainState
       else
         Logger.error("MainState", "Recieved an object data package but doesn't have an active GameWorld.")
       end
+    when TCPSessionData::Package::DATAMODE::MAP_SYNC
+      if @@game_world.is_a?(GameWorld)
+        @@game_world.world_sync(package.mapsync_data())
+      else
+        Logger.error("MainState", "Recieved a map sync data package but doesn't have an active GameWorld.")
+      end
     else
       Logger.error("MainState", "Recieved a data package set in a mode it doesn't know. (#{package.inspect})")
       status_string = "!Malformed Data Package!"

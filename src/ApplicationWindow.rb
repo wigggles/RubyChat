@@ -43,7 +43,7 @@ class ApplicationWindow < Gosu::Window
     set_app_state(MainState.new(self))
     # delay the autostart of network services, this provides enough time for the GUI to be created
     Thread.new {
-      sleep(0.5)
+      sleep(0.1)
       if is_server
         @@service_mode = :tcp_server
         start_server_service()

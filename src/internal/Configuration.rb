@@ -21,12 +21,23 @@ module Configuration
   ROOT_DIR = File.expand_path('.',__dir__)
   PORT = 2000
 
-  CLI_MODE = false  # Use comand line interface, or 'false' for Gosu GUI.
-
+  #--------------------------------------
   # GUI mode settings:
+  CLI_MODE   = false  # Use comand line interface, or 'false' for Gosu GUI.
   FULLSCREEN = false
-  SCREEN_WIDTH = 640
-  SCREEN_HEIGHT = 480
+  module ResolutionModes
+    DESK_HDLRG = [1920, 1080]
+    DESK_HDLRG = [1366,  768]
+    DESK_LRG   = [1280, 1024]
+    DESK_MED   = [1024,  768]
+    DESK_SML   = [ 640,  480]
+    MOBILE_LRG = [ 414,  736]
+    MOBILE_MED = [ 390,  844]
+    MOBILE_SML = [ 360,  800]
+    MOBILE_MIN = [ 375,  667]
+  end
+  # To change resolutions just swap out the below constant.
+  SCREEN_WIDTH, SCREEN_HEIGHT = ResolutionModes::DESK_SML
 
   #---------------------------------------------------------------------------------------------------------
   # Get local subnet IP, (LAN)

@@ -42,18 +42,6 @@ class Button
     action() if @@parent_window.controls.trigger?(:mouse_lclick)
   end
   #---------------------------------------------------------------------------------------------------------
-  #D: Called when the button is disposed and/or when the parent class is destroyed.
-  def dispose()
-    @disposed = true
-    @action = nil
-    @owner = nil
-    @bgimg = nil
-  end
-  #---------------------------------------------------------------------------------------------------------
-  def disposed?
-    return @disposed
-  end
-  #---------------------------------------------------------------------------------------------------------
   #D: Check to see if the mouse is on-top of the button, then if it is, update sprite actions.
   def mouse_hover?()
     mouse_x = @@parent_window.mouse_x.to_i
@@ -94,7 +82,7 @@ class Button
   def draw_background(screen_x, screen_y, color)
     #@@parent_window.draw_rect(screen_x, screen_y, @width, @height, color)
     @bgimg = BlobDraw.get_image({
-      of: :round_rect, width: @width, height: @height, radius: 12, outlined: true
+      of: :round_rect, width: @width, height: @height, radius: 16, outlined: true
     }) if @bgimg.nil?
     @bgimg.draw(screen_x, screen_y, 0, 1.0, 1.0, color)
   end
@@ -116,5 +104,15 @@ class Button
       return false
     end
     return true
+  end
+  #---------------------------------------------------------------------------------------------------------
+  #D: Called when the button is disposed and/or when the parent class is destroyed.
+  def dispose()
+    @disposed = true
+    @bgimg = nil
+  end
+  #---------------------------------------------------------------------------------------------------------
+  def disposed?
+    return @disposed
   end
 end

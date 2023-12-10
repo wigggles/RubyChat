@@ -23,6 +23,7 @@ class TextField
     @is_active = true  #DV Allow the text field to be changed?
     @pulse = [0, true] #DV Used to blink the text position.
     @press_repeat = REPEAT_PRESS_TIMEOUT
+    @bgcolor = 0xff_353535 #DV Background color used to fill viewing Rect.
     # setup call method for action
     @owner = options[:owner] || nil
     if @owner.nil?
@@ -76,20 +77,20 @@ class TextField
     end
   end
   #---------------------------------------------------------------------------------------------------------
-  #D: Called when the button is disposed and/or when the parent class is destroyed.
-  def dispose()
-    @disposed = true
-  end
-  #---------------------------------------------------------------------------------------------------------
-  def disposed?
-    return @disposed
-  end
-  #---------------------------------------------------------------------------------------------------------
   #D: Draw onto the Gosu window any images related to the button.
   def draw()
-    return if @@parent_window.nil?
-    @@parent_window.draw_rect(@x, @y, @width, @height, 0xff_353535)
+    return if @disposed || @@parent_window.nil?
+    draw_background(@x, @y, @bgcolor)
+    # show what has been typed already
     @font.draw_text(@text, @x + @box_edge_buf, @y + @box_edge_buf, 0, 1, 1, 0xFF_ffffff)
+  end
+  #---------------------------------------------------------------------------------------------------------
+  def draw_background(screen_x, screen_y, color)
+    #@@parent_window.draw_rect(@x, @y, @width, @height, 0xff_353535)
+    @bgimg = BlobDraw.get_image({
+      of: :round_rect, width: @width, height: @height, radius: 8, outlined: true
+    }) if @bgimg.nil?
+    @bgimg.draw(screen_x, screen_y, 0, 1.0, 1.0, color)
   end
   #---------------------------------------------------------------------------------------------------------
   #D Try first to catch errors, and call function from parent class user.
@@ -106,5 +107,15 @@ class TextField
       return false
     end
     return true
+  end
+  #---------------------------------------------------------------------------------------------------------
+  #D: Called when the button is disposed and/or when the parent class is destroyed.
+  def dispose()
+    @disposed = true
+    @bgimg = nil
+  end
+  #---------------------------------------------------------------------------------------------------------
+  def disposed?
+    return @disposed
   end
 end
