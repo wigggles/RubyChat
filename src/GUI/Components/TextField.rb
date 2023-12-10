@@ -34,6 +34,7 @@ class TextField
   #---------------------------------------------------------------------------------------------------------
   #D: Update loop for button behaviors.
   def update()
+    return if @disposed || @@parent_window.nil?
     return unless @is_active
     @press_repeat -= 1 if @press_repeat > 0
     @old_key_press = nil if @press_repeat <= 0
@@ -78,6 +79,10 @@ class TextField
   #D: Called when the button is disposed and/or when the parent class is destroyed.
   def dispose()
     @disposed = true
+  end
+  #---------------------------------------------------------------------------------------------------------
+  def disposed?
+    return @disposed
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Draw onto the Gosu window any images related to the button.

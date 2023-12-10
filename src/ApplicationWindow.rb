@@ -6,11 +6,13 @@ require 'gosu'
 
 require './src/internal/Logger.rb'
 require './src/internal/InputControls.rb'
+require './src/internal/BlobDraw.rb'
 
 require './src/network/TCPSessionData.rb'
 require './src/network/TCPserver.rb'
 require './src/network/TCPclient.rb'
 
+require './src/GUI/Components/Button.rb'
 require './src/GUI/Components/TextField.rb'
 require './src/GUI/Components/ConsoleBox.rb'
 require './src/GUI/MainState.rb'

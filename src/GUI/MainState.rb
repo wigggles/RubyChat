@@ -21,6 +21,14 @@ class MainState
       :action => :text_action
     }
     @command_field = TextField.new(parent_window, options)
+    # make a few buttons
+    @buttons = [
+      Button.new(parent_window, {
+        text: "Spam 5",
+        owner: self, action: :button_action,
+        x: @@parent_window.width - 4, y: 4, align: :right
+      })
+    ]
     # set the default game world
     set_game_world(World_00.new(self))
   end
@@ -32,6 +40,9 @@ class MainState
     @@parent_window.font.draw_text("#{username}", 128, 4, 0, 1, 1, 0xFF_ffffff)
     @console_box.draw unless @console_box.nil?
     @command_field.draw unless @command_field.nil?
+    @buttons.each { |button|
+      button.draw()
+    }
   end
   #---------------------------------------------------------------------------------------------------------
   # Set the world where it's objects are located in and about.
@@ -39,20 +50,39 @@ class MainState
     @@game_world = world_class
   end
   #---------------------------------------------------------------------------------------------------------
+  # Attempt to get a new package Object from any active sessions so new data can be loaded into it.
+  def get_new_network_package()
+    data_package = @@parent_window.getNew_session_package()
+    if data_package.nil?
+      Logger.warn("MainState", "TextField could not create a new session package for sending data.")
+      @console_box.push_text("> You are not currently connected to any server.") unless @console_box.nil?
+    end
+    return data_package
+  end
+  #---------------------------------------------------------------------------------------------------------
+  # Called when action is used on a Button.
+  def button_action()
+    data_package = get_new_network_package()
+    return nil if data_package.nil?
+    data_package.pack_dt_string("Spam 5 messages Button used.")
+    Logger.info("MainState", "Button sending 5 session data packages.")
+    5.times { |time|
+      @@parent_window.send_socket_data(data_package)
+    }
+    return true
+  end
+  #---------------------------------------------------------------------------------------------------------
   # Called when action is used on TextField.
   def text_action(string = "")
     Logger.debug("MainState", "TextField return value: #{string}")
     if PACKAGE_MESSAGE_STRING
-      data_package = @@parent_window.getNew_session_package()
-      if data_package.nil?
-        Logger.warn("MainState", "TextField could not create a new session package for sending data.")
-        @console_box.push_text("> You are not currently connected to any server.") unless @console_box.nil?
-      else
+        data_package = get_new_network_package()
+        return nil if data_package.nil?
         data_package.pack_dt_string(string)
         Logger.info("MainState", "TextField to send String session data package. (#{data_package.inspect})")
         @@parent_window.send_socket_data(data_package)
-      end
     else
+      Logger.info("MainState", "TextField sending String as socket data. (#{string.inspect})")
       @@parent_window.send_socket_data(string)
     end
     return true
@@ -118,11 +148,17 @@ class MainState
   def update
     @console_box.update unless @console_box.nil?
     @command_field.update unless @command_field.nil?
+    @buttons.each { |button|
+      button.update()
+    }
   end
   #---------------------------------------------------------------------------------------------------------
   # Called when the menu is shut, it releases things back to GC.
 	def dispose
     @console_box.dispose unless @console_box.nil?
     @command_field.dispose unless @command_field.nil?
+    @buttons.each { |button|
+      button.dispose()
+    }
 	end
 end
