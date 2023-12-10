@@ -40,7 +40,11 @@ class MainState
   # Draw to screen.
   def draw
     return if @@parent_window.nil?
-    username = @@parent_window.current_session.nil? ? "'nil'" : @@parent_window.current_session.username
+    unless @@parent_window.self_client_description.nil?
+      username = @@parent_window.self_client_description.username
+    else
+      username = "'nil'"
+    end
     @@parent_window.font.draw_text("#{username}", 128, 4, 0, 1, 1, 0xFF_ffffff)
     @console_box.draw unless @console_box.nil?
     @command_field.draw unless @command_field.nil?
@@ -100,7 +104,7 @@ class MainState
   #---------------------------------------------------------------------------------------------------------
   # If network service is working with a TCPSessionData::Package handle how the incoming data is used.
   def proccess_incoming_session_dataPackage(package)
-    own_package = @@parent_window.current_session.username == package.user_id
+    own_package = @@parent_window.current_session.is_self?(package.user_id)
     status_string = ""
     # behave based on packaged data type
     case package.data_mode

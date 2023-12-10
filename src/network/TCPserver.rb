@@ -4,7 +4,6 @@
 class TCPserver
   FAKE_LATENCY = false
 
-  @@client_sessions = []
   @@server_session = nil
   @@tcpSocket = nil
   @@remote_ip = "localhost"
@@ -13,7 +12,6 @@ class TCPserver
 
   #---------------------------------------------------------------------------------------------------------
   def initialize()
-    @@client_sessions = []
     @@tcpSocket = TCPServer.new(Configuration::PORT)
     @@remote_ip, @@local_ip = Configuration.getSelfIP()
     @@server_session = TCPSessionData.new(@@tcpSocket, "ServerHost")
@@ -34,15 +32,15 @@ class TCPserver
   end
 
   #---------------------------------------------------------------------------------------------------------
-  def clients()
-    return @@client_sessions
+  def client_pool()
+    return nil if session.nil?
+    return session.get_client_pool()
   end
 
   #---------------------------------------------------------------------------------------------------------
   def find_client(username ="")
-    located = @@client_sessions.select { |client| client.username == username }
-    return located[0] if located.length > 0
-    return nil
+    located = client_pool.find_client(by: :name, search_term: username)
+    return located
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -62,11 +60,12 @@ class TCPserver
       Logger.warn("TCPServer", "Duplicate user '#{duplicate_user}' tried to join.")
     else
       # welcome the new user client session and inform others of their arrival
-      client_session.username = requested_name
-      Logger.debug("TCPserver", "Sending a server welcome to client session id: (#{client_session.username})")
-      send_client_a_msg(client_session, "Hello #{client_session.username}! #{@@client_sessions.count} clients.")
+      client_session.description.set_name(requested_name)
+      client_name = client_session.description.username
+      Logger.debug("TCPserver", "Sending a server welcome to client session id: (#{client_name})")
+      send_client_a_msg(client_session, "Hello #{client_name}! #{client_pool.count()} clients.")
       puts("Check name (#{client_session.inspect})")
-      send_clients_a_msg("#{client_session.username} joined! #{@@client_sessions.count} clients.", [client_session.username])
+      send_clients_a_msg("#{client_name} joined! #{client_pool.count()} clients.", [client_name])
       # while client connection remains open, recieve data from them, proccess it and notify other clients
       while incoming_data_byteString = client_session.await_data_msg()
         case incoming_data_byteString
@@ -92,11 +91,11 @@ class TCPserver
     # when the connection is no longer open or closed manually, dispose of the client
     client_session.close()
     if duplicate_user.nil?
-      send_clients_a_msg("#{client_session.username} left!")
+      send_clients_a_msg("#{client_session.description.username} left!")
     else
       send_clients_a_msg("Duplicate username '#{duplicate_user}' client rejected!")
     end
-    @@client_sessions.delete(client_session)
+    client_pool.delete(client_session.description.ref_id)
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -139,10 +138,13 @@ class TCPserver
     # calculate local server's client latency values
     data_package.calculate_latency()
     # inform all the clients currently connected
-    @@client_sessions.each {|client_session|
+    client_pool.each {|client_description|
       sleep(0.5) if TCPserver::FAKE_LATENCY # add artificial latency in seconds
-      unless exclusions.include?(client_session.username)
-        client_session.send_msg(sessionData_byteString, false)
+      unless exclusions.include?(client_description.username)
+        puts("(#{client_description.inspect})")
+        unless client_description.session_pointer.nil?
+          client_description.session_pointer.send_msg(sessionData_byteString, false)
+        end
       end
     }
     # CLI mode console prints
@@ -170,7 +172,7 @@ class TCPserver
         break if @@tcpSocket.nil?
         new_client = @@tcpSocket.accept()
         new_session = TCPSessionData.new(new_client)
-        @@client_sessions << new_session
+        client_pool.add_new(new_session)
         Thread.new {
           session_thread_handle(new_session)
         }
@@ -190,7 +192,6 @@ class TCPserver
   # Gracefully shutdown the server and close the sockets.
   def shutdown()
     @@server_session.close() unless @@server_session.nil?
-    @@client_sessions = []
     @@server_session = nil
     @@tcpSocket = nil # TCPSessionData closes the socket
   end

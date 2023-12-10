@@ -62,13 +62,13 @@ class TCPclient
     return unless @error.nil?
     while incoming_data_package = @@client_session.await_data_msg()
       incoming_data_package.calculate_latency() # calculate client server latency
-      time_stmp, from_user, srvr_time_stmp, data_mode, data = incoming_data_package.to_a()
-      Logger.info("TCPclient", "Recieved server package from: (#{from_user.inspect})")
+      time_stmp, from_user_id, srvr_time_stmp, data_mode, data = incoming_data_package.to_a()
+      Logger.info("TCPclient", "Recieved server package from: (#{from_user_id.inspect})")
       if Configuration::CLI_MODE
-        if @@client_session.username == from_user
+        if @@client_session.is_self?(from_user_id)
           puts("(me)> #{data}")
         else
-          puts("(#{from_user})> #{data}")
+          puts("(#{from_user_id})> #{data}")
         end
       elsif parent_window
         parent_window.send_data_into_state(incoming_data_package)

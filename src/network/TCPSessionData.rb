@@ -3,6 +3,9 @@
 #===============================================================================================================================
 class TCPSessionData
   attr_accessor :username
+
+  @@client_pool = nil
+  @@client_self = nil
   #--------------------------------------
   # Option to send raw byte strings instead of inflating by a factor of two and sending a hex string representation.
   # If you can manage to avoid end-line flags when packaging raw data then you can use raw strings. Otherwise its
@@ -34,6 +37,18 @@ class TCPSessionData
     #    n    | 2-byte signed   | mode integer.
     #    a*   | take whats left | an arbritray length 'message' as a byte string value.
     #--------------------------------------
+    BYTE_CLIENTSYNC = "n a*"
+    CLIENTSYNC_LENGTH = 2
+    BYTE_CLIENT = "Z10 Z20"
+    CLIENT_BYTES = 30
+    # After using the BYTE_STRING to define common data, perform additonal proccessing.
+    #
+    #    n    | 2-byte signed   | type integer.
+    #    a*   | take whats left | typically a list of clients.
+    #
+    #    Z10  | 10 char bytes   | refrence ID.
+    #    Z20  | 20 char bytes   | client username.
+    #--------------------------------------
     BYTE_OBJECT = "Z10 L L n a*"
     OBJECT_LENGTH = 5
     # After using the BYTE_STRING to define common data, perform additonal proccessing.
@@ -53,9 +68,10 @@ class TCPSessionData
     #--------------------------------------
     # It's crude but effective to count up using constants.
     module DATAMODE
-      STRING   = 0    # This mode is the basic one, it just uses the string as a string.
-      OBJECT   = 1    # This mode performs additional variable proccessing for generic data.
-      MAP_SYNC = 2    # This mode is data from the server that is related to a GameWorld.
+      STRING      = 0    # This mode is the basic one, it just uses the string as a string.
+      CLIENT_SYNC = 1    # This mode is when client data is being syncronized.
+      OBJECT      = 2    # This mode performs additional variable proccessing for generic data.
+      MAP_SYNC    = 3    # This mode is data from the server that is related to a GameWorld.
     end
     #--------------------------------------
     # Knowing the data is half the battle, validate package DATAMODE is being utilized properly.
@@ -72,6 +88,10 @@ class TCPSessionData
       case @data_mode
       when DATAMODE::STRING
         return @data.is_a?(String)
+      when DATAMODE::CLIENT_SYNC
+        return false unless @data.is_a?(Array)
+        return false unless @data.length == Package::CLIENTSYNC_LENGTH
+        return true
       when DATAMODE::OBJECT
         return false unless @data.is_a?(Array)
         return false unless @data.length == Package::OBJECT_LENGTH
@@ -143,6 +163,15 @@ class TCPSessionData
       return [@latency_sender, @latency_server]
     end
     #--------------------------------------
+    # If package is in @data_mode DATAMODE::CLIENT_SYNC bring order to the Array in @data.
+    def client_data()
+      return nil if @data_mode != DATAMODE::CLIENT_SYNC
+      return {
+        length: @data[0],
+        pool_data: @data[1].chars.each_slice(Package::CLIENT_BYTES).unpack(Package::BYTE_CLIENT)
+      }
+    end
+    #--------------------------------------
     # If package is in @data_mode DATAMODE::OBJECT bring order to the Array in @data.
     def object_data()
       return nil if @data_mode != DATAMODE::OBJECT
@@ -184,6 +213,24 @@ class TCPSessionData
       return make_byte_string()
     end
     #--------------------------------------
+    # If data type is for syncing the client pools between remote/local sessions.
+    def pack_dt_client(data_array = nil)
+      set_creation_time()
+      @data_mode = DATAMODE::CLIENT_SYNC
+      if data_array.nil?
+        packtype, pool_data = @data
+      else
+        packtype, pool_data = data_array
+      end
+      # package client data into an array of byte stings
+      packed_pool = pool_data.map() { |client|
+        client.pack(Package::BYTE_CLIENT)
+      }
+      @data = [packtype, packed_pool].pack(Package::BYTE_CLIENTSYNC)
+      # after packaging the data Array, package the entire message for sending over network
+      return make_byte_string()
+    end
+    #--------------------------------------
     # If data type is for a generic world/state object.
     def pack_dt_object(data_array = nil)
       set_creation_time()
@@ -222,6 +269,9 @@ class TCPSessionData
       when DATAMODE::STRING
         return pack_dt_string() if @data.is_a?(String)
         Logger.error("TCPSessionData::Package", "In STRING mode but did not recieve a String.")
+      when DATAMODE::CLIENT_SYNC
+        return pack_dt_client() if @data.is_a?(Array)
+        Logger.error("TCPSessionData::Package", "In CLIENT_SYNC mode but did not recieve an Array.")
       when DATAMODE::OBJECT
         return pack_dt_object() if @data.is_a?(Array)
         Logger.error("TCPSessionData::Package", "In OBJECT mode but did not recieve an Array.")
@@ -261,10 +311,20 @@ class TCPSessionData
       case @data_mode
       when DATAMODE::STRING
         @data = @data.to_s
+      when DATAMODE::CLIENT_SYNC
+        @data = @data.unpack(Package::BYTE_CLIENTSYNC)
+        unless @data.length != Package::CLIENTSYNC_LENGTH
+          Logger.warn("TCPSessionData::Package", "DATAMODE::CLIENT package is malformed.")
+        end
       when DATAMODE::OBJECT
         @data = @data.unpack(Package::BYTE_OBJECT)
         unless @data.length != Package::OBJECT_LENGTH
           Logger.warn("TCPSessionData::Package", "DATAMODE::OBJECT package is malformed.")
+        end
+      when DATAMODE::MAP_SYNC
+        @data = @data.unpack(Package::BYTE_MAPSYNC)
+        unless @data.length != Package::MAPSYNC_LENGTH
+          Logger.warn("TCPSessionData::Package", "DATAMODE::MAP_SYNC package is malformed.")
         end
       else
         Logger.error("TCPSessionData::Package", "In an unkown DATAMODE (#{@data_mode})")
@@ -290,20 +350,56 @@ class TCPSessionData
 #===============================================================================================================================
   def initialize(socket, username = "")
     @creation_time = Time.now.utc()
-    @username = username
     @socket = socket
+    @@client_pool = ClientPool.new(self)
+    @@client_self = ClientPool::Client.new(username: username)
+    request_sync_client()
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  def is_self?(this_user_id = nil)
+    return @@client_self.ref_id == this_user_id
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  def description()
+    return @@client_self
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  def get_client_pool()
+    return @@client_pool
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  # Request a change to @@client_self be synced by the server to other client sessions.
+  def request_sync_client()
+    @@client_self
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  # Sync client details accross connected sessions.
+  def send_sync_clients()
+    @@client_pool
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  # Recived a request to sync clients from server session.
+  def recieve_sync_clients()
+    @@client_pool
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Return a new Package object to load data into in preperation for sending over network session.
   def empty_data_package()
-    return Package.new(nil, @username)
+    return nil if @@client_self.nil?
+    return Package.new(nil, @@client_self.ref_id)
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Package send data array into a byte string depending on kown types.
   def package_data(data_to_send)
-    new_data_package = Package.new(nil, @username)
+    new_data_package = Package.new(nil, @@client_self.ref_id)
     case data_to_send
     when String
       character_count = data_to_send.length()

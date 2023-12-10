@@ -8,6 +8,7 @@ require './src/internal/Logger.rb'
 require './src/internal/InputControls.rb'
 require './src/internal/BlobDraw.rb'
 
+require './src/network/ClientPool.rb'
 require './src/network/TCPSessionData.rb'
 require './src/network/TCPserver.rb'
 require './src/network/TCPclient.rb'
@@ -162,6 +163,26 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Get 'self' local session's Client description.
+  def self_client_description()
+    session = current_session()
+    unless session.nil?
+      return session.description()
+    end
+    return nil
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  # Get the client pool as reported by the server.
+  def get_clients()
+    session = current_session()
+    unless session.nil?
+      return session.get_client_pool()
+    end
+    return nil
+  end
+
+  #---------------------------------------------------------------------------------------------------------
   def network_service()
     case @@service_mode
     when :tcp_server
@@ -239,7 +260,7 @@ class ApplicationWindow < Gosu::Window
       if @is_server
         session = current_session()
         unless session.nil?
-          shutdown_msg = "Server shut down, goodbye #{service.clients.count} clients!"
+          shutdown_msg = "Server shut down, goodbye #{service.client_pool.count} clients!"
           outdata = session.package_data(shutdown_msg)
           service.send_bytes_to_everyone(outdata)
         end
