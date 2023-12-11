@@ -6,7 +6,7 @@ class Button
 
   ACTION_TIMEOUT = 10
   
-  attr_accessor :x, :y, :color, :hcolor, :text
+  attr_accessor :x, :y, :width, :height, :color, :hcolor, :text
   #---------------------------------------------------------------------------------------------------------
   #D: Creates the Kernel Class (klass) instance.
   def initialize(parent_window, options = {})
@@ -87,6 +87,14 @@ class Button
     @is_highlighted = (mouse_x > @x && mouse_x < @x + @width && mouse_y > @y && mouse_y < @y + @height)
     @is_depresed = false unless @is_highlighted
     return @is_highlighted
+  end
+  #---------------------------------------------------------------------------------------------------------
+  def bottom()
+    return @y + @height
+  end
+  #---------------------------------------------------------------------------------------------------------
+  def right()
+    return @x + @width
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Draw onto the Gosu window any images related to the button.

@@ -3,8 +3,8 @@
 #===============================================================================================================================
 class World_00 < GameWorld
   #---------------------------------------------------------------------------------------------------------
-  def initialize(parent_state)
-    super(parent_state)
+  def initialize(parent_state, options = {})
+    super(parent_state, options)
   end
   #---------------------------------------------------------------------------------------------------------
   def update()
@@ -16,7 +16,7 @@ class World_00 < GameWorld
     @bgimg = BlobDraw.get_image({
       of: :round_rect, width: @view_width, height: @view_height, radius: 16, outlined: true
     }) if @bgimg.nil?
-    @bgimg.draw(@x, @y, 0, 1.0, 1.0, color)
+    @bgimg.draw(@x, @y, 0, 1.0, 1.0, 0xFF_22cc55)
   end
   #---------------------------------------------------------------------------------------------------------
   def dispose()

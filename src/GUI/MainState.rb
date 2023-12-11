@@ -14,10 +14,9 @@ class MainState
     # create a text viewing window
     options = {
       :width => Configuration::SCREEN_WIDTH / 8 * 3,
-      :height => Configuration::SCREEN_HEIGHT - 106,
-      :x => 8
+      :x => 8, :y => 56
     }
-    options[:y] = 48
+    options[:height] = Configuration::SCREEN_HEIGHT - options[:y] - 64
     @console_box = ConsoleBox.new(parent_window, options)
     # make a text input field
     options = {
@@ -37,27 +36,17 @@ class MainState
       }),
       CheckBox.new(parent_window, {
         owner: self, action: :checkbox_action, radius: 12,
-        x: @@parent_window.width - 24, y: 72, align: :center
+        x: @@parent_window.width - 148, y: 28, align: :center
       })
     ]
     # set the default game world
-    set_game_world(World_00.new(self))
-  end
-  #---------------------------------------------------------------------------------------------------------
-  # Draw to screen.
-  def draw
-    return if @@parent_window.nil?
-    unless @@parent_window.self_client_description.nil?
-      username = @@parent_window.self_client_description.username
-    else
-      username = "'nil'"
-    end
-    @@parent_window.font.draw_text("#{username}", 128, 4, 0, 1, 1, 0xFF_ffffff)
-    @console_box.draw unless @console_box.nil?
-    @command_field.draw unless @command_field.nil?
-    @buttons.each { |button|
-      button.draw()
+    options = {
+      x: @console_box.right + 4,
+      y: @console_box.y,
+      view_width: Configuration::SCREEN_WIDTH - @console_box.width - 18,
+      view_height: @console_box.height + @command_field.height + 4
     }
+    set_game_world(World_00.new(self, options))
   end
   #---------------------------------------------------------------------------------------------------------
   # Set the world where it's objects are located in and about.
@@ -167,6 +156,8 @@ class MainState
   #---------------------------------------------------------------------------------------------------------
   #D: Update loop, where things get up to date!
   def update
+    @@game_world.update() unless @@game_world.nil?
+    # after updating the world, then update the UI
     @console_box.update unless @console_box.nil?
     @command_field.update unless @command_field.nil?
     @buttons.each { |button|
@@ -174,8 +165,31 @@ class MainState
     }
   end
   #---------------------------------------------------------------------------------------------------------
+  # Draw to screen.
+  def draw
+    return if @@parent_window.nil?
+    @@game_world.draw() unless @@game_world.nil?
+    # after drawing the world and its WorldObjects, draw the UI over top of it
+    draw_local_description()
+    @console_box.draw unless @console_box.nil?
+    @command_field.draw unless @command_field.nil?
+    @buttons.each { |button|
+      button.draw()
+    }
+  end
+  #---------------------------------------------------------------------------------------------------------
+  def draw_local_description()
+    unless @@parent_window.self_client_description.nil?
+      username = @@parent_window.self_client_description.username
+    else
+      username = "'nil'"
+    end
+    @@parent_window.font.draw_text("#{username}", 128, 4, 0, 1, 1, 0xFF_ffffff)
+  end
+  #---------------------------------------------------------------------------------------------------------
   # Called when the menu is shut, it releases things back to GC.
 	def dispose
+    @@game_world.dispose() unless @@game_world.nil?
     @console_box.dispose unless @console_box.nil?
     @command_field.dispose unless @command_field.nil?
     @buttons.each { |button|

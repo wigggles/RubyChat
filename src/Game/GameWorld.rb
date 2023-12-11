@@ -6,24 +6,24 @@ class GameWorld
 
   @@parent_state = nil
 
-  attr_accessor :x, :y, :screen_x, :screen_y, :view_width, :view_height
+  attr_accessor :x, :y, :world_x, :world_y, :view_width, :view_height
   attr_reader :width, :height, :objects
   #---------------------------------------------------------------------------------------------------------
-  def initialize(parent_state)
+  def initialize(parent_state, options = {})
     @@parent_state = parent_state
     @disposed = false
     # Where the world is drawn at with in the GUI window
-    @x = 0 unless @x
-    @y = 0 unless @y
-    # The lookup sizes for the map's terrian/tilemap data
-    @width  = 0 unless @width
-    @height = 0 unless @height
-    # Used for offsetting the draws for tilemaps/WorldObjects
-    @screen_x = 0 unless @screen_x
-    @screen_y = 0 unless @screen_y
+    @x = options[:x] || 0 unless @x
+    @y = options[:y] || 0 unless @y
     # How much of the GameWorld is shown with in the GUI window
-    @view_width  = Configuration::SCREEN_WIDTH  / 4 unless @view_width
-    @view_height = Configuration::SCREEN_HEIGHT / 4 unless @view_height
+    @view_width  = options[:view_width]  || Configuration::SCREEN_WIDTH  / 4 unless @view_width
+    @view_height = options[:view_height] || Configuration::SCREEN_HEIGHT / 4 unless @view_height
+    # Used for offsetting the draws for tilemaps/WorldObjects
+    @world_x = options[:world_x] || 0 unless @world_x
+    @world_y = options[:world_y] || 0 unless @world_y
+    # The lookup sizes for the map's terrian/tilemap data
+    @width  = options[:width]  || 0 unless @width
+    @height = options[:height] || 0 unless @height
     # Objects with in the world
     @objects = {} unless @objects
   end

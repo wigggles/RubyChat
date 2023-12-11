@@ -7,7 +7,7 @@ class TextField
   MAX_LENGTH = 42 # 128
   @@parent_window = nil
 
-  attr_accessor :is_active, :x, :y, :z, :color, :text, :font
+  attr_accessor :is_active, :x, :y, :z, :width, :height, :color, :text, :font
   #---------------------------------------------------------------------------------------------------------
   #D: Creates the Kernel Class (klass) instance.
   def initialize(parent_window, options = {})
@@ -75,6 +75,14 @@ class TextField
       end
       @pulse[1] = !@pulse[1]
     end
+  end
+  #---------------------------------------------------------------------------------------------------------
+  def bottom()
+    return @y + @height
+  end
+  #---------------------------------------------------------------------------------------------------------
+  def right()
+    return @x + @width
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Draw onto the Gosu window any images related to the button.
