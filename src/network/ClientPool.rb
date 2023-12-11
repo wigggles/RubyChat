@@ -24,7 +24,7 @@ class ClientPool
   def initialize(net_session)
     @net_session = net_session
     @clients = []
-    Logger.debug("ClientPool", "New client pool created: (#{@net_session.inspect})")
+    Logger.info("ClientPool", "New client pool created with session: (#{@net_session.inspect})")
   end
   #---------------------------------------------------------------------------------------------------------
   def count()

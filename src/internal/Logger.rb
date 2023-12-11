@@ -61,7 +61,7 @@ module Logger
     }
   end
   # Runtime configuration constants defined below.
-  LEVEL = Level::INFO       # What level of logging to provide filtering for.
+  LEVEL = Level::INFO      # What level of logging to provide filtering for.
   USE_CALL_TRACING = true   # When Logger is used, show where it was called from in the console.
   INCLUDE_TIMESTAMP = true  # Timestamp log entry.
   #--------------------------------------
@@ -134,7 +134,14 @@ module Logger
   def self.show_caller_location()
     short_stack_trace = caller_locations(3, 1)
     location_of_log_call = "./src/" + short_stack_trace[0].to_s.split('/src/').last()
-    puts("^ logged from: #{location_of_log_call}")
+    if Logger::USE_CONSOLE_COLORS
+      puts("#{TermColor::PURPLE}^#{TermColor::NONE}"+
+        " logged from: #{TermColor::LIGHT_PURPLE}"+
+        "#{location_of_log_call}#{TermColor::NONE}"
+      )
+    else
+      puts("^ logged from: #{location_of_log_call}")
+    end
     return short_stack_trace
   end
   #---------------------------------------------------------------------------------------------------------

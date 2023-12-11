@@ -228,9 +228,11 @@ class TCPSessionData
         packtype, pool_data = data_array
       end
       # package client data into an array of byte stings
-      packed_pool = pool_data.map() { |client|
-        client.pack(Package::BYTE_CLIENT)
-      }
+      unless pool_data.is_a?(String)
+        packed_pool = pool_data.map() { |client|
+          client.pack(Package::BYTE_CLIENT)
+        }
+      end
       Logger.info("TCPSessionData", "Sending to clients. (#{pool_data.inspect})")
       @data = [packtype, packed_pool].flatten.pack(Package::BYTE_CLIENTSYNC)
       # after packaging the data Array, package the entire message for sending over network
@@ -292,9 +294,7 @@ class TCPSessionData
     #--------------------------------------
     # Unpack the byte string back into an array of objects.
     def unpack_byte_string(byte_string)
-      Logger.info("TCPSessionData::Package", "Unpacking byte string value (#{byte_string.inspect})")
       data_array = byte_string.unpack(Package::BYTE_STRING)
-      Logger.info("TCPSessionData::Package", "Unpacked String byte array (#{data_array.inspect})")
       # validate this new Array has the correct data form
       begin
         ct_time = (data_array[0] / 10000000.0)
@@ -335,8 +335,11 @@ class TCPSessionData
       else
         Logger.error("TCPSessionData::Package", "In an unkown DATAMODE (#{@data_mode})")
       end
-      Logger.debug("TCPSessionData::Package", "Unpacked Array (#{data_array.inspect})")
-      Logger.info("TCPSessionData::Package", "Unpacked state (#{self.inspect})")
+      Logger.info("TCPSessionData::Package", "Unpacking byte string"+
+        "\nRaw (#{byte_string.inspect})"+
+        "\nUnpacked Array (#{data_array.inspect})"+
+        "\npackage (#{self.inspect})"
+      )
       return true
     end
     #--------------------------------------
@@ -347,7 +350,7 @@ class TCPSessionData
     #--------------------------------------
     # Return the package as a byte string.
     def to_byte_s()
-      return pack_dt_string()
+      return get_packed_string()
     end
   end
 
@@ -365,6 +368,7 @@ class TCPSessionData
   #---------------------------------------------------------------------------------------------------------
   # Check if provided user ref_id is the same one as the local session.
   def is_self?(this_user_id = nil)
+    return nil if @@client_self.nil?
     return @@client_self.ref_id == this_user_id
   end
 
@@ -383,7 +387,7 @@ class TCPSessionData
   #---------------------------------------------------------------------------------------------------------
   # Request a change to @@client_self be synced by the server to other client sessions.
   def request_sync_client()
-    Logger.debug("ClientPool", "Local is requesting a change to its public description. (#{@@client_self.inspect})")
+    Logger.info("TCPSessionData", "Local client is requesting a change to its public description. (#{@@client_self.inspect})")
     @@client_pool.sync_client(@@client_self)
   end
 
@@ -397,6 +401,7 @@ class TCPSessionData
   #---------------------------------------------------------------------------------------------------------
   # Package send data array into a byte string depending on kown types.
   def package_data(data_to_send)
+    return nil if @@client_self.nil?
     new_data_package = Package.new(nil, @@client_self.ref_id)
     case data_to_send
     when String
@@ -418,10 +423,10 @@ class TCPSessionData
   def unpackage_data(received_data)
     case received_data
     when TCPSessionData::Package
-      Logger.debug("TCPSessionData", "Recieved an already packaged data byte string.")
+      Logger.info("TCPSessionData", "Recieved an already packaged data byte string.")
       return received_data
     when String
-      Logger.debug("TCPSessionData", "Creating new Package from raw byte string data.")
+      Logger.info("TCPSessionData", "Creating new Package from raw byte string data.")
       return Package.new(received_data)
     else
       Logger.warn("TCPSessionData", "Does not know what it recieved as data. (#{received_data.class})")
@@ -431,7 +436,7 @@ class TCPSessionData
 
   #---------------------------------------------------------------------------------------------------------
   # Send a string byte message to the server connected to if any.
-  def send_msg(sending_data, pack_data = true)
+  def send_msg(sending_data, pack_data: true)
     return nil if closed?
     # validate message Object class type
     case sending_data
@@ -444,7 +449,6 @@ class TCPSessionData
         socket_puts(byte_string_package)
       end
     when String
-      Logger.info("TCPSessionData", "Packaging String data to send: (#{sending_data.inspect})")
       if TCPSessionData::FORCE_ENCODING
         before_encoding = sending_data
         sending_data = before_encoding.encode(
@@ -455,10 +459,12 @@ class TCPSessionData
         end
       end
       if pack_data
+        Logger.info("TCPSessionData", "Packaging String data to send: (#{sending_data.inspect})")
         byte_string_package = package_data(sending_data)
         Logger.info("TCPSessionData", "send_msg() raw data: (#{byte_string_package.inspect})")
         socket_puts(byte_string_package)
       else
+        Logger.info("TCPSessionData", "Sending a raw String: (#{sending_data.inspect})")
         socket_puts(sending_data)
       end
     else
@@ -473,6 +479,7 @@ class TCPSessionData
   # Try catch error for sending with socket so application doens't crash if it fails to put sting data.
   # All outgoing data flows through here when using a TCPSessionData object.
   def socket_puts(string)
+    Logger.debug("TCPSessionData", "Socket.puts raw String about to send. (#{string.inspect})")
     # do some checks on the argument provided before proceeding
     unless string.is_a?(String)
       Logger.error("TCPSessionData", "Can only Socket.puts String objects.")
@@ -499,8 +506,10 @@ class TCPSessionData
       case error
       when Errno::EPIPE
         Logger.error("TCPSessionData", "Can not send when socket is closed.")
+      when Errno::ENOTCONN
+        Logger.error("TCPSessionData", "Socket is open on this end, but the client session is not.")
       else
-        Logger.error("TCPSessionData", "Write: #{error}")
+        Logger.error("TCPSessionData", "Write: #{error.inspect}")
       end
       return false
     end
@@ -524,10 +533,10 @@ class TCPSessionData
     rescue => error
       case error
       when Errno::ECONNRESET
-        Logger.debug("TCPSessionData", "Client forcibly closed connection.")
+        Logger.warn("TCPSessionData", "Client forcibly closed connection.")
         return nil
       when SocketClosedException
-        Logger.debug("TCPSessionData", "Server forcibly closed connection.")
+        Logger.warn("TCPSessionData", "The other end of the socket forcibly closed its connection.")
         return nil
       else
         Logger.error("TCPSessionData", "Read: #{error}")

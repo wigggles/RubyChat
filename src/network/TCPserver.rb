@@ -98,17 +98,17 @@ class TCPserver
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Send a basic string to all the clients.
+  # Send a basic String message to all the subscribed clients.
   def send_clients_a_msg(string_msg = "", exclusions = [])
     outgoing_data = @@server_session.package_data(string_msg)
     send_bytes_to_everyone(outgoing_data, exclusions)
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Send a basic string to a single client.
+  # Send a basic String message to a single client.
   def send_client_a_msg(client_session, string_msg = "")
     outgoing_data = @@server_session.package_data(string_msg)
-    client_session.send_msg(outgoing_data)
+    client_session.send_msg(outgoing_data, pack_data: false)
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ class TCPserver
     package = @@server_session.empty_data_package()
     array_package = client_pool.pack_array_to_send()
     outgoing_data = package.pack_dt_client([ClientPool::DATAMODE::ALL_CLIENTS, array_package])
-    send_bytes_to_everyone(outgoing_data)
+    send_bytes_to_everyone(outgoing_data, [])
     Logger.debug("ClientPool", "Server is sending a request to sync clients:"+
       "\nPool: (#{array_package.inspect})"+
       "\nPackage: (#{outgoing_data.inspect})"
@@ -126,13 +126,13 @@ class TCPserver
   
   #---------------------------------------------------------------------------------------------------------
   # Send information to all clients connected, unless excluded from the send.
-  def send_bytes_to_everyone(sessionData_byteString, exclusions = [])
-    Logger.debug("TCPserver", "Sending to subscribed clients object (#{sessionData_byteString.inspect})")
+  def send_bytes_to_everyone(sessionData_byteString, exclusions = [], pre_packaged = false)
+    Logger.debug("TCPserver", "Sending data to subscribed clients: (#{sessionData_byteString.inspect})")
     # validate the data about to be sent
     case sessionData_byteString
     when String
       data_package = @@server_session.unpackage_data(sessionData_byteString)
-      Logger.debug("TCPserver", "Unpacked string before sending to clients. (#{data_package.inspect})")
+      Logger.info("TCPserver", "Unpacked string into package before forwarding to clients. (#{data_package.inspect})")
     when TCPSessionData::Package
       data_package = sessionData_byteString
     else
@@ -154,7 +154,10 @@ class TCPserver
       sleep(0.5) if TCPserver::FAKE_LATENCY # add artificial latency in seconds
       unless exclusions.include?(client_description.username)
         unless client_description.session_pointer.nil?
-          client_description.session_pointer.send_msg(sessionData_byteString, false)
+          next if session.is_self?(client_description.ref_id)
+          client_description.session_pointer.send_msg(data_package, pack_data: false)
+        else
+          Logger.error("TCPserver", "When sending to client pool, a client did not have a session. (#{client_description.inspect})")
         end
       end
     }
@@ -184,9 +187,10 @@ class TCPserver
         new_client = @@tcpSocket.accept()
         new_session = TCPSessionData.new(new_client)
         client_description = client_pool.add_new(new_session)
-        Logger.info("TCPserver", "New client was added into the pool:"+
-          "\n(#{client_description.inspect})"+
-          "\n(#{new_client.inspect})"
+        Logger.debug("TCPserver", "New client was added into the pool:"+
+          "\nSession: (#{new_session.inspect})"+
+          "\nClient: (#{client_description.inspect})"+
+          "\nsocket: (#{new_client.inspect})"
         )
         Thread.new {
           session_thread_handle(new_session, client_description)
