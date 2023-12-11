@@ -11,8 +11,15 @@ class MainState
   # Create klass object.
   def initialize(parent_window)
     @@parent_window = parent_window
-    # make the text field
-    @console_box = ConsoleBox.new(parent_window)
+    # create a text viewing window
+    options = {
+      :width => Configuration::SCREEN_WIDTH / 8 * 3,
+      :height => Configuration::SCREEN_HEIGHT - 106,
+      :x => 8
+    }
+    options[:y] = 48
+    @console_box = ConsoleBox.new(parent_window, options)
+    # make a text input field
     options = {
       :width => @console_box.width,
       :x => @console_box.x,
@@ -102,28 +109,28 @@ class MainState
     return true
   end
   #---------------------------------------------------------------------------------------------------------
-  # If network service is working with a TCPSessionData::Package handle how the incoming data is used.
+  # If network service is working with a TCPsession::Package handle how the incoming data is used.
   def proccess_incoming_session_dataPackage(package)
     own_package = @@parent_window.current_session.is_self?(package.user_id)
     status_string = ""
     # behave based on packaged data type
     case package.data_mode
-    when TCPSessionData::Package::DATAMODE::STRING
+    when TCPsession::Package::DATAMODE::STRING
       if own_package
         status_string = "(me)> #{package.data}"
       else
         status_string = "(#{package.user_id})> #{package.data}"
       end
-    when TCPSessionData::Package::DATAMODE::CLIENT_SYNC
+    when TCPsession::Package::DATAMODE::CLIENT_SYNC
       client_pool = @@parent_window.get_clients()
       client_pool.sync_requested(package)
-    when TCPSessionData::Package::DATAMODE::OBJECT
+    when TCPsession::Package::DATAMODE::OBJECT
       if @@game_world.is_a?(GameWorld)
         @@game_world.world_object_sync(package.object_data())
       else
         Logger.error("MainState", "Recieved an object data package but doesn't have an active GameWorld.")
       end
-    when TCPSessionData::Package::DATAMODE::MAP_SYNC
+    when TCPsession::Package::DATAMODE::MAP_SYNC
       if @@game_world.is_a?(GameWorld)
         @@game_world.world_sync(package.mapsync_data())
       else
@@ -142,7 +149,7 @@ class MainState
     return if @@parent_window.nil?
     display_string = ""
     case package
-    when TCPSessionData::Package
+    when TCPsession::Package
       return if @@parent_window.current_session.nil?
       display_string = proccess_incoming_session_dataPackage(package)
       Logger.info("MainState", "Recieved network packaged data (#{package.inspect})")

@@ -13,8 +13,8 @@ end
 
 if Configuration::CLI_MODE
   require 'socket'
-  require './src/network/TCPSessionData.rb'
-  require './src/network/TCPclient.rb'
+  require './src/network/TCP/session.rb'
+  require './src/network/TCP/client.rb'
 
   client = TCPclient.new("localhost")
   client.start_session(username)

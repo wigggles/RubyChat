@@ -6,8 +6,8 @@ require './src/internal/Configuration.rb'
 #===============================================================================================================================
 if Configuration::CLI_MODE
   require 'socket'
-  require './src/network/TCPSessionData.rb'
-  require './src/network/TCPserver.rb'
+  require './src/network/TCP/session.rb'
+  require './src/network/TCP/server.rb'
 
   server = TCPserver.new()
   server.listen()

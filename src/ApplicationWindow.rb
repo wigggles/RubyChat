@@ -9,9 +9,10 @@ require './src/internal/InputControls.rb'
 require './src/internal/BlobDraw.rb'
 
 require './src/network/ClientPool.rb'
-require './src/network/TCPSessionData.rb'
-require './src/network/TCPserver.rb'
-require './src/network/TCPclient.rb'
+require './src/network/TCP/session-Package.rb'
+require './src/network/TCP/session.rb'
+require './src/network/TCP/server.rb'
+require './src/network/TCP/client.rb'
 
 require './src/GUI/Components/Button.rb'
 require './src/GUI/Components/CheckBox.rb'
@@ -202,7 +203,7 @@ class ApplicationWindow < Gosu::Window
     case @@service_mode
     when :tcp_server
       case data
-      when TCPSessionData::Package
+      when TCPsession::Package
         data.set_server_time()
         data_byte_string = data.get_packed_string()
       when String

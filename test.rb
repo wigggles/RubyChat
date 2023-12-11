@@ -13,20 +13,30 @@ module Tests
     ids  = []
     dupe = false
     new_id = nil
+    start_time = Time.now
     while !dupe
-      new_id = Configuration.generate_new_ref_id()
-      puts("loop #{trys} id: (#{new_id})") if (trys % 10_000) == 0
-      if ids.include?(new_id)
-        dupe = true
-        break
-      else
-        ids << new_id
-      end
+      threads = []
+      new_ids = []
+      100.times() { |i| # Max number running at the same time is limited to the system environment, this requests 100 "jobs"
+        new_ids << Configuration.generate_new_ref_id(as_string: true)
+        #new_ids << Configuration.generate_new_ref_id(as_string: true, packed: true).unpack('H*')[0]
+      }
+      threads.each() { thread.join() } # wait to sync all thread "job" work is done here
+      puts("Trys: (#{trys}) ids: [\n\t#{new_ids[0..10].join(",\n\t")} ]") if (trys % 10_000) == 0
+      new_ids.each() {|new_id|
+        if ids.include?(new_id)
+          dupe = new_id
+          break
+        else
+          ids << new_id
+        end
+      }
       trys = ids.size
-      break if trys >= MAX_NEW_ID_TRYS
+      break if trys >= Tests::MAX_NEW_ID_TRYS
     end
+    puts("Test is over, took (#{(Time.now - start_time).round()}) seconds")
     if dupe
-      puts("Found a dupe id generated in #{trys} trys for (#{new_id}).")
+      puts("Found a dupe id generated in #{trys} trys for (#{dupe}).")
     else
       puts("Tried #{trys} times but did not find any duplicate ids.")
     end
@@ -40,7 +50,7 @@ module Tests
   end
   #---------------------------------------------------------------------------------------------------------
   def self.test_hex_pacakge()
-    sample_package = "\xF6\x030y\x9By<\x00ServerHost\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00Server shut down, goodbye 0 clients!"
+    sample_package = "\xF6\x030y\x9By<\x00\x00\x00\x00\x00\x00\x00\x00Server shut down, goodbye 0 clients!"
     puts("Test bytes string to hex string.")
     puts("(#{sample_package})")
     puts("(#{sample_package.inspect})")

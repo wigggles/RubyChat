@@ -35,7 +35,7 @@ class TCPclient
   # Send server a request to initialize the client's session data.
   def start_session(username = "")
     return if @error
-    @@client_session = TCPSessionData.new(@@tcpSocket, username)
+    @@client_session = TCPsession.new(@@tcpSocket, username)
     @@client_session.send_msg("#{username}")
   end
 
@@ -94,8 +94,8 @@ class TCPclient
     when String
       Logger.debug("TCPclient", "Sending String data.")
       data = data.chomp()
-    when TCPSessionData::Package
-      Logger.debug("TCPclient", "Sending TCPSessionData::Package data.")
+    when TCPsession::Package
+      Logger.debug("TCPclient", "Sending TCPsession::Package data.")
       data.set_creation_time()
     else
       Logger.error("TCPclient", "Attempting to send data type it doesnt recognize. (#{data.class})")
@@ -109,6 +109,6 @@ class TCPclient
   def shutdown()
     @@client_session.close() unless @@client_session.nil?
     @@client_session = nil
-    @@tcpSocket = nil # TCPSessionData closes the socket
+    @@tcpSocket = nil # TCPsession closes the socket
   end
 end

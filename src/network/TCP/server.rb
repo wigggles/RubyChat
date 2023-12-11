@@ -14,7 +14,7 @@ class TCPserver
   def initialize()
     @@tcpSocket = TCPServer.new(Configuration::PORT)
     @@remote_ip, @@local_ip = Configuration.getSelfIP()
-    @@server_session = TCPSessionData.new(@@tcpSocket, "ServerHost")
+    @@server_session = TCPsession.new(@@tcpSocket, "ServerHost")
     # When network session packages are validated from a client, should the server kick clients when
     # the package data is found to be invalid?
     @drop_clients_on_package_error = false
@@ -60,15 +60,15 @@ class TCPserver
     else
       # welcome the new user client session and inform others of their arrival
       description.set_name(requested_name)
-      Logger.debug("TCPserver", "New client description: (#{description.inspect})")
       sync_server_clients()
+      Logger.debug("TCPserver", "New client description: (#{description.inspect})")
       send_client_a_msg(client_session, "Hello #{description.username}! #{client_pool.count()} clients.")
       puts("Check name (#{client_session.inspect})")
       send_clients_a_msg("#{description.username} joined! #{client_pool.count()} clients.", [description.username])
       # while client connection remains open, recieve data from them, proccess it and notify other clients
       while incoming_data_byteString = client_session.await_data_msg()
         case incoming_data_byteString
-        when TCPSessionData::Package
+        when TCPsession::Package
           # to make things more managable, the byte string data is expanded into a class Object
           # this data can be verified if configured correctly to add a layer of error netting
           # as well as additional featuring when handling the data with other Objects
@@ -133,7 +133,7 @@ class TCPserver
     when String
       data_package = @@server_session.unpackage_data(sessionData_byteString)
       Logger.info("TCPserver", "Unpacked string into package before forwarding to clients. (#{data_package.inspect})")
-    when TCPSessionData::Package
+    when TCPsession::Package
       data_package = sessionData_byteString
     else
       Logger.error("TCPserver", "Can only send clients strings or known network packages.")
@@ -185,7 +185,7 @@ class TCPserver
       begin
         break if @@tcpSocket.nil?
         new_client = @@tcpSocket.accept()
-        new_session = TCPSessionData.new(new_client)
+        new_session = TCPsession.new(new_client)
         client_description = client_pool.add_new(new_session)
         Logger.debug("TCPserver", "New client was added into the pool:"+
           "\nSession: (#{new_session.inspect})"+
@@ -212,6 +212,6 @@ class TCPserver
   def shutdown()
     @@server_session.close() unless @@server_session.nil?
     @@server_session = nil
-    @@tcpSocket = nil # TCPSessionData closes the socket
+    @@tcpSocket = nil # TCPsession closes the socket
   end
 end

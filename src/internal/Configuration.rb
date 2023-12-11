@@ -37,7 +37,7 @@ module Configuration
     MOBILE_MIN = [ 375,  667]
   end
   # To change resolutions just swap out the below constant.
-  SCREEN_WIDTH, SCREEN_HEIGHT = ResolutionModes::DESK_SML
+  SCREEN_WIDTH, SCREEN_HEIGHT = ResolutionModes::DESK_MED
 
   #---------------------------------------------------------------------------------------------------------
   # Get local subnet IP, (LAN)
@@ -49,15 +49,18 @@ module Configuration
 
   #---------------------------------------------------------------------------------------------------------
   # Attempt to generate new unique ids, uses a time based float. By defualt this id will be a String hex value.
-  def self.generate_new_ref_id(as_string = true)
+  # Depending on mode, returns a 4 byte integer, a 10 byte readable string, or a 5 byte packed string value.
+  def self.generate_new_ref_id(as_string: true, packed: false)
     # Generate a new id as a large 8 byte value which will be clamped down to 4 bytes
     # 42,949,672,950 is the maximum size of a 4 byte unsigned integer
-    new_id = ((Time.now.to_f() * 100_000_000_000).round() % 1_000_000_000_000_000_000)
-    new_id = new_id % 42_949_672_950
+    new_id = ((Time.now.to_f() * 100_000_000).round() % 42_949_672_950)
     # If using a semi human readable id that was generated, it needs to be at least 10 byte characters.
     if as_string
       new_id = new_id.to_s(16).rjust(10, rand(0..10).to_s)
       new_id = new_id[0..10]
+      # additionally, convert the hex string from the integer id hex readable string into a raw byte string halfing
+      # its size, however this makes the id's not human readable unless they are unpacked later.
+      new_id = [new_id].pack('H*') if packed
     end
     return new_id
   end

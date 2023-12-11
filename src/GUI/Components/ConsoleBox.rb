@@ -10,10 +10,10 @@ class ConsoleBox
   #D: Create object Klass.
   def initialize(parent_window, options = {})
     @@parent_window = parent_window
-    @width  = Configuration::SCREEN_WIDTH / 8 * 7  #DV Width of the viewing Rect.
-    @height = Configuration::SCREEN_HEIGHT / 4 * 3 #DV Height of the viewing Rect.
-    @x = (Configuration::SCREEN_WIDTH - @width) / 2
-    @y = (Configuration::SCREEN_HEIGHT - @height) / 2
+    @width  = options[:width]  || 0  #DV Width of the viewing Rect.
+    @height = options[:height] || 0  #DV Height of the viewing Rect.
+    @x = options[:x] || 0
+    @y = options[:y] || 0
     @bgcolor = 0xFF_6c6c6c   #DV Background color used to fill viewing Rect.
     font_size = options[:font_size] || 18
     @font = Gosu::Font.new(parent_window, "verdana", font_size)

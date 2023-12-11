@@ -38,7 +38,7 @@ class ClientPool
   def add_new(client)
     Logger.debug("ClientPool", "Adding to the client pool. [#{@clients.size}] (#{client.inspect})")
     case client
-    when TCPSessionData
+    when TCPsession
       new_client = Client.new(session_pointer: client)
       @clients << new_client
       return new_client
@@ -84,7 +84,10 @@ class ClientPool
   # Recived a request to sync clients from server session.
   def sync_requested(package)
     sync_data = package.client_data()
-    Logger.debug("ClientPool", "Local has recieved request to sync with client pool. (#{sync_data.inspect})")
+    Logger.debug("ClientPool", "Local has recieved request to sync with client pool."+
+      "\npackage: (#{package.inspect})"+
+      "\nclient_data: (#{sync_data.inspect})"
+    )
     #@@client_pool
   end
   #---------------------------------------------------------------------------------------------------------
