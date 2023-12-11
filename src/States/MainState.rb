@@ -17,7 +17,7 @@ class MainState
       :x => 8, :y => 56
     }
     options[:height] = Configuration::SCREEN_HEIGHT - options[:y] - 64
-    @console_box = ConsoleBox.new(parent_window, options)
+    @console_box = GUI::ConsoleBox.new(options)
     # make a text input field
     options = {
       :width => @console_box.width,
@@ -26,15 +26,15 @@ class MainState
       :owner => self,
       :action => :text_action
     }
-    @command_field = TextField.new(parent_window, options)
+    @command_field = GUI::TextField.new(options)
     # make a few buttons
     @buttons = [
-      Button.new(parent_window, {
+      GUI::Button.new({
         text: "Spam 5",
         owner: self, action: :button_action,
         x: @@parent_window.width - 4, y: 4, align: :right
       }),
-      CheckBox.new(parent_window, {
+      GUI::CheckBox.new({
         owner: self, action: :checkbox_action, radius: 12,
         x: @@parent_window.width - 148, y: 28, align: :center
       })

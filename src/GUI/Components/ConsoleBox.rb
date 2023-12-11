@@ -1,32 +1,30 @@
 #===============================================================================================================================
 # !!!   ConsoleBox.rb | A box that displays Kernel log information to the program's screen.
 #===============================================================================================================================
-class ConsoleBox
+class GUI::ConsoleBox < GUI::Component
   MAX_LINES = 18 # max number of lines to draw onto the screen, prevents lines being draw off screen.
-  @@parent_window = nil
-
-  attr_accessor :x, :y, :width, :height
   #---------------------------------------------------------------------------------------------------------
   #D: Create object Klass.
-  def initialize(parent_window, options = {})
-    @@parent_window = parent_window
+  def initialize(options = {})
     @width  = options[:width]  || 0  #DV Width of the viewing Rect.
     @height = options[:height] || 0  #DV Height of the viewing Rect.
     @x = options[:x] || 0
     @y = options[:y] || 0
     @bgcolor = 0xFF_6c6c6c   #DV Background color used to fill viewing Rect.
     font_size = options[:font_size] || 18
-    @font = Gosu::Font.new(parent_window, "verdana", font_size)
+    @font = Gosu::Font.new(GUI.parent_window, "verdana", font_size)
     max_char_width = @font.text_width("W").round() * 0.55
     @line_width = (@width / max_char_width).round() #DV Max characters in a line before wrapping.
     @viewable_text = []
     @prevous_text = ""
+    super(options)
   end
   #---------------------------------------------------------------------------------------------------------
-  #D: Update loop.
-  def update()
-    return if @disposed || @@parent_window.nil?
-
+  def draw_background(screen_x, screen_y, color)
+    @bgimg = GUI::BlobDraw.get_image({
+      of: :round_rect, width: @width, height: @height, radius: 8, outlined: true
+    }) if @bgimg.nil?
+    @bgimg.draw(screen_x, screen_y, 0, 1.0, 1.0, color)
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Push text for display in console window; I.E. System.write_console(string)
@@ -67,17 +65,15 @@ class ConsoleBox
     end
   end
   #---------------------------------------------------------------------------------------------------------
-  def bottom()
-    return @y + @height
-  end
-  #---------------------------------------------------------------------------------------------------------
-  def right()
-    return @x + @width
+  #D: Update loop.
+  def update()
+    return unless super()
+
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Draw screen interactions.
   def draw()
-    return if @disposed || @@parent_window.nil?
+    return unless super()
     draw_background(@x, @y, @bgcolor)
     # draw the text contents
     x = @x + 8
@@ -88,22 +84,10 @@ class ConsoleBox
     end
   end
   #---------------------------------------------------------------------------------------------------------
-  def draw_background(screen_x, screen_y, color)
-    #@@parent_window.draw_rect(@x, @y, @width, @height, @bgcolor)
-    @bgimg = BlobDraw.get_image({
-      of: :round_rect, width: @width, height: @height, radius: 8, outlined: true
-    }) if @bgimg.nil?
-    @bgimg.draw(screen_x, screen_y, 0, 1.0, 1.0, color)
-  end
-  #---------------------------------------------------------------------------------------------------------
   #D: Called when the button is disposed and/or when the parent class is destroyed.
   def dispose()
-    @disposed = true
     @viewable_text = nil
     @bgimg = nil
-  end
-  #---------------------------------------------------------------------------------------------------------
-  def disposed?
-    return @disposed
+    super()
   end
 end

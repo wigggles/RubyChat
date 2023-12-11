@@ -13,7 +13,7 @@ class World_00 < GameWorld
   #---------------------------------------------------------------------------------------------------------
   def draw()
     super()
-    @bgimg = BlobDraw.get_image({
+    @bgimg = GUI::BlobDraw.get_image({
       of: :round_rect, width: @view_width, height: @view_height, radius: 16, outlined: true
     }) if @bgimg.nil?
     @bgimg.draw(@x, @y, 0, 1.0, 1.0, 0xFF_22cc55)

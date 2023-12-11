@@ -6,7 +6,6 @@ require 'gosu'
 
 require './src/internal/Logger.rb'
 require './src/internal/InputControls.rb'
-require './src/internal/BlobDraw.rb'
 
 require './src/network/ClientPool.rb'
 require './src/network/TCP/session-Package.rb'
@@ -14,11 +13,14 @@ require './src/network/TCP/session.rb'
 require './src/network/TCP/server.rb'
 require './src/network/TCP/client.rb'
 
+require './src/GUI/Component.rb'
+require './src/GUI/BlobDraw.rb'
 require './src/GUI/Components/Button.rb'
 require './src/GUI/Components/CheckBox.rb'
 require './src/GUI/Components/TextField.rb'
 require './src/GUI/Components/ConsoleBox.rb'
-require './src/GUI/MainState.rb'
+
+require './src/States/MainState.rb'
 
 require './src/Game/GameWorld.rb'
 require './src/Game/WorldObject.rb'
@@ -43,6 +45,7 @@ class ApplicationWindow < Gosu::Window
     # create a new session socket manager
     @is_server = is_server
     # start up the GUI's initial state manager
+    GUI.bind_window(self)
     set_app_state(MainState.new(self))
     # delay the autostart of network services, this provides enough time for the GUI to be created
     Thread.new {
