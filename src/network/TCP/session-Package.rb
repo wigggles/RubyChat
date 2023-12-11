@@ -146,7 +146,7 @@ class TCPsession
     end
     #--------------------------------------
     # If package is in @data_mode DATAMODE::CLIENT_SYNC bring order to the Array in @data.
-    def client_data()
+    def expand_client_data()
       return nil if @data_mode != DATAMODE::CLIENT_SYNC
       unpacked_data = @data[1].chars.each_slice(Package::CLIENT_BYTES).map(&:join)
       unpacked_data = unpacked_data.map() { |entry|
@@ -158,14 +158,12 @@ class TCPsession
         "\nRaw: (#{@data[1].inspect})"+
         "\nData: (#{unpacked_data.inspect})"
       )
-      return {
-        packtype: @data[0],
-        pool_data: unpacked_data
-      }
+      # {packtype:, client_data:}
+      return [@data[0], unpacked_data]
     end
     #--------------------------------------
     # If package is in @data_mode DATAMODE::OBJECT bring order to the Array in @data.
-    def object_data()
+    def expand_object_data()
       return nil if @data_mode != DATAMODE::OBJECT
       return {
         ref_id:   @data[0],
@@ -177,7 +175,7 @@ class TCPsession
     end
     #--------------------------------------
     # If package is in @data_mode DATAMODE::MAP_SYNC bring order to the Array in @data.
-    def mapsync_data()
+    def expand_mapsync_data()
       return nil if @data_mode != DATAMODE::MAP_SYNC
       return {
         packtype: @data[0],
@@ -190,10 +188,10 @@ class TCPsession
     def make_byte_string()
       byte_string = [
         @created_time.to_f() * 10000000,
-        @user_id,
+        @user_id.to_s(),
         @srvr_time_stmp.to_f() * 10000000,
-        @data_mode,
-        @data
+        @data_mode.to_i(),
+        @data.to_s()
       ].pack(Package::BYTE_STRING)
       Logger.info("TCPSessionData::Package", "Built new package for DATAMODE:(#{@data_mode})"+
         "\nData: (#{@data.inspect})"+
@@ -271,20 +269,23 @@ class TCPsession
     # Depending on defined mode get the data package byte string. This string is ready to send over socket sessions.
     def get_packed_string(data_mode = nil, for_data = nil)
       @data_mode = data_mode unless data_mode.nil?
-      @data = for_data unless for_data.nil?
       case @data_mode
       when DATAMODE::STRING
-        return pack_dt_string() if @data.is_a?(String)
-        Logger.error("TCPSessionData::Package", "In STRING mode but did not recieve a String.")
+        return pack_dt_string() if for_data.nil?
+        return pack_dt_string(for_data) if for_data.is_a?(String)
+        Logger.error("TCPSessionData::Package", "In STRING mode but did not recieve a String. (#{for_data.inspect})")
       when DATAMODE::CLIENT_SYNC
-        return pack_dt_client() if @data.is_a?(Array)
-        Logger.error("TCPSessionData::Package", "In CLIENT_SYNC mode but did not recieve an Array.")
+        return pack_dt_client() if for_data.nil?
+        return pack_dt_client(for_data) if for_data.is_a?(Array)
+        Logger.error("TCPSessionData::Package", "In CLIENT_SYNC mode but did not recieve an Array. (#{for_data.inspect})")
       when DATAMODE::OBJECT
-        return pack_dt_object() if @data.is_a?(Array)
-        Logger.error("TCPSessionData::Package", "In OBJECT mode but did not recieve an Array.")
+        return pack_dt_object() if for_data.nil?
+        return pack_dt_object(for_data) if for_data.is_a?(Array)
+        Logger.error("TCPSessionData::Package", "In OBJECT mode but did not recieve an Array. (#{for_data.inspect})")
       when DATAMODE::MAP_SYNC
-        return pack_dt_mapSync() if @data.is_a?(Array)
-        Logger.error("TCPSessionData::Package", "In MAP_SYNC mode but did not recieve an Array.")
+        return pack_dt_mapSync() if for_data.nil?
+        return pack_dt_mapSync(for_data) if for_data.is_a?(Array)
+        Logger.error("TCPSessionData::Package", "In MAP_SYNC mode but did not recieve an Array. (#{for_data.inspect})")
       else # data mode is not defined
         Logger.warn("TCPSessionData::Package", "In an unkown data mode. #{@data_mode.class}")
         return nil
@@ -300,9 +301,9 @@ class TCPsession
         @created_time     = Time.at(ct_time)            # local time message was created
         @user_id          = data_array[1].delete("\00") # client_id with byte padding removed
         sv_time = (data_array[2] / 10000000.0)
-        @srvr_time_stmp   = Time.at(sv_time)            # time from server
-        @data_mode        = data_array[3].to_i          # extra data packaging mode
-        @data             = data_array[4]               # extra/rest of data bytes sent
+        @srvr_time_stmp   = Time.at(sv_time)            # time when server touched package
+        @data_mode        = data_array[3].to_i          # extra data packaging mode defined
+        @data             = data_array[4].to_s          # extra/rest of string byte data recieved
       rescue => error
         Logger.error("TCPSessionData::Package", "Issue during unpacking byte string:"+
           "\nRaw: (#{byte_string.inspect})"+
@@ -326,18 +327,22 @@ class TCPsession
         unless @data.size == Package::CLIENTSYNC_LENGTH
           Logger.warn("TCPSessionData::Package", "DATAMODE::CLIENT package is malformed. (#{@data.inspect})")
         end
+        @data = expand_client_data()
       when DATAMODE::OBJECT
         @data = @data.unpack(Package::BYTE_OBJECT)
         unless @data.length == Package::OBJECT_LENGTH
           Logger.warn("TCPSessionData::Package", "DATAMODE::OBJECT package is malformed.")
         end
+        @data = expand_object_data()
       when DATAMODE::MAP_SYNC
         @data = @data.unpack(Package::BYTE_MAPSYNC)
         unless @data.length == Package::MAPSYNC_LENGTH
           Logger.warn("TCPSessionData::Package", "DATAMODE::MAP_SYNC package is malformed.")
         end
+        @data = expand_map_data()
       else
         Logger.error("TCPSessionData::Package", "In an unkown DATAMODE (#{@data_mode})")
+        return nil
       end
       Logger.debug("TCPSessionData::Package", "Unpacking DATAMODE:(#{@data_mode})"+
         "\nData: (#{@data.inspect})"

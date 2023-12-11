@@ -110,7 +110,12 @@ class MainState
       if own_package
         status_string = "(me)> #{package.data}"
       else
-        status_string = "(#{package.user_id})> #{package.data}"
+        client_description = @@parent_window.get_clients.find_client(search_term: package.user_id)
+        if client_description
+          status_string = "(#{client_description.username})> #{package.data}"
+        else
+          status_string = "(#{package.user_id})> #{package.data}"
+        end
       end
     when TCPsession::Package::DATAMODE::CLIENT_SYNC
       client_pool = @@parent_window.get_clients()
@@ -145,8 +150,12 @@ class MainState
       case package.data_mode
       when TCPsession::Package::DATAMODE::STRING
         display_string = proccess_incoming_session_dataPackage(package)
-        Logger.debug("MainState", "Recieved string package, displaying it. (#{display_string.inspect})")
+        Logger.debug("MainState", "Recieved string package, displaying message. (#{display_string.inspect})")
+      when TCPsession::Package::DATAMODE::CLIENT_SYNC
+        Logger.debug("MainState", "Recieved client package, syncing with it.")
+        proccess_incoming_session_dataPackage(package)
       else
+        # do nothing with the package that was recieved
         Logger.info("MainState", "Recieved network packaged data (#{package.inspect})")
       end
     when String

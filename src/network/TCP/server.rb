@@ -116,12 +116,13 @@ class TCPserver
   def sync_server_clients()
     package = @@server_session.empty_data_package()
     array_package = client_pool.pack_array_to_send()
-    outgoing_data = package.pack_dt_client([ClientPool::DATAMODE::ALL_CLIENTS, array_package])
-    send_bytes_to_everyone(outgoing_data, [])
-    Logger.warn("ClientPool", "Server is sending a request to sync clients:"+
+    outgoing_data = package.get_packed_string(TCPsession::Package::DATAMODE::CLIENT_SYNC, [ClientPool::DATAMODE::ALL_CLIENTS, array_package])
+    Logger.debug("TCPserver", "Server is sending a request to sync clients:"+
       "\nPool: (#{array_package.inspect})"+
+      "\nData: (#{package.data.inspect})"+
       "\nPackage: (#{outgoing_data.inspect})"
     )
+    send_bytes_to_everyone(outgoing_data, [])
   end
   
   #---------------------------------------------------------------------------------------------------------
@@ -136,7 +137,7 @@ class TCPserver
     when TCPsession::Package
       data_package = sessionData_byteString
     else
-      Logger.error("TCPserver", "Can only send clients strings or known network packages.")
+      Logger.error("TCPserver", "Can only send clients strings or known network packages. NOT:(#{sessionData_byteString.inspect})")
       return nil
     end
     if data_package.has_error?
