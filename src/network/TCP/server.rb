@@ -118,7 +118,7 @@ class TCPserver
     array_package = client_pool.pack_array_to_send()
     outgoing_data = package.pack_dt_client([ClientPool::DATAMODE::ALL_CLIENTS, array_package])
     send_bytes_to_everyone(outgoing_data, [])
-    Logger.debug("ClientPool", "Server is sending a request to sync clients:"+
+    Logger.warn("ClientPool", "Server is sending a request to sync clients:"+
       "\nPool: (#{array_package.inspect})"+
       "\nPackage: (#{outgoing_data.inspect})"
     )

@@ -85,12 +85,12 @@ class MainState
   # Called when action is used on TextField.
   def text_action(string = "")
     Logger.debug("MainState", "TextField return value: #{string}")
-    if PACKAGE_MESSAGE_STRING
-        data_package = get_new_network_package()
-        return nil if data_package.nil?
-        data_package.pack_dt_string(string)
-        Logger.info("MainState", "TextField to send String session data package. (#{data_package.inspect})")
-        @@parent_window.send_socket_data(data_package)
+    if MainState::PACKAGE_MESSAGE_STRING
+      data_package = get_new_network_package()
+      return nil if data_package.nil?
+      data_package.pack_dt_string(string)
+      Logger.info("MainState", "TextField to send String session data package. (#{data_package.inspect})")
+      @@parent_window.send_socket_data(data_package)
     else
       Logger.info("MainState", "TextField sending String as socket data. (#{string.inspect})")
       @@parent_window.send_socket_data(string)
@@ -102,6 +102,8 @@ class MainState
   def proccess_incoming_session_dataPackage(package)
     own_package = @@parent_window.current_session.is_self?(package.user_id)
     status_string = ""
+    Logger.debug("MainState", "Recieved a new network_package in DATAMODE:(#{package.data_mode}).")
+    Logger.info("MainState", "Processing network_package\nPackage:(#{package.inspect}).")
     # behave based on packaged data type
     case package.data_mode
     when TCPsession::Package::DATAMODE::STRING
@@ -140,8 +142,13 @@ class MainState
     case package
     when TCPsession::Package
       return if @@parent_window.current_session.nil?
-      display_string = proccess_incoming_session_dataPackage(package)
-      Logger.info("MainState", "Recieved network packaged data (#{package.inspect})")
+      case package.data_mode
+      when TCPsession::Package::DATAMODE::STRING
+        display_string = proccess_incoming_session_dataPackage(package)
+        Logger.debug("MainState", "Recieved string package, displaying it. (#{display_string.inspect})")
+      else
+        Logger.info("MainState", "Recieved network packaged data (#{package.inspect})")
+      end
     when String
       display_string = package
       Logger.info("MainState", "Recieved network raw string data (#{package.inspect})")

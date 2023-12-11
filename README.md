@@ -128,3 +128,25 @@ X                   |            | back up a byte
 x                   |            | null byte
 
 [Table Source](https://rubydoc.info/stdlib/core/1.9.3/Array:pack)
+
+
+### Fun stuff to know
+
+When using an ApplicationWindow you can take advantage of the InputControls bound to it. To do so, bellow
+are some examples of how to do it.
+
+```ruby
+GUI.parent_window.controls.holding?(:move_up)
+GUI.parent_window.controls.holding?(:move_down)
+GUI.parent_window.controls.holding?(:shift)
+
+GUI.parent_window.controls.trigger?(:menu_action)
+GUI.parent_window.controls.trigger?(:menu_up)
+GUI.parent_window.controls.trigger?(:cancel_action)
+GUI.parent_window.controls.trigger?(:action_key)
+
+GUI.parent_window.controls.holding?(:mouse_lclick)
+GUI.parent_window.controls.trigger?(:mouse_lclick)
+GUI.parent_window.mouse_x.to_i()
+GUI.parent_window.mouse_y.to_i()
+```

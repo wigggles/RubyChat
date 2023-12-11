@@ -153,6 +153,11 @@ class TCPsession
         ref_id, username = entry.unpack(Package::BYTE_CLIENT)
         [ref_id.delete("\00"), username.delete("\00")]
       }
+      Logger.debug("TCPSessionData::Package", 
+        "Recieved DATAMODE::CLIENT_SYNC package. decoding it. Mode: (#{@data[0]})"+
+        "\nRaw: (#{@data[1].inspect})"+
+        "\nData: (#{unpacked_data.inspect})"
+      )
       return {
         packtype: @data[0],
         pool_data: unpacked_data
@@ -183,13 +188,18 @@ class TCPsession
     # Basically all traffic is a single string, packaging bytes in ways you can unpackage in order later.
     # This is not typically called on its own, but used for 'pack_dt' methods.
     def make_byte_string()
-      return [
+      byte_string = [
         @created_time.to_f() * 10000000,
         @user_id,
         @srvr_time_stmp.to_f() * 10000000,
         @data_mode,
         @data
-      ].pack(Package::BYTE_STRING) 
+      ].pack(Package::BYTE_STRING)
+      Logger.info("TCPSessionData::Package", "Built new package for DATAMODE:(#{@data_mode})"+
+        "\nData: (#{@data.inspect})"+
+        "\nPacked: (#{byte_string.inspect})"
+      )
+      return byte_string
     end
     #--------------------------------------
     # If data type is for a String, package as such.
@@ -213,11 +223,18 @@ class TCPsession
       unless pool_data.is_a?(String)
         packed_pool = pool_data.map() { |client|
           client.pack(Package::BYTE_CLIENT)
-        }
+        }.flatten().join()
       end
-      Logger.info("TCPSessionData", "Sending to clients. (#{pool_data.inspect})")
-      @data = [packtype, packed_pool].flatten.pack(Package::BYTE_CLIENTSYNC)
+      Logger.debug("TCPSessionData::Package", "Building client_pool sync package."+
+        "\nPool: (#{pool_data.inspect})"+
+        "\nPackage: (#{packed_pool})"
+      )
+      @data = [packtype, packed_pool].pack(Package::BYTE_CLIENTSYNC)
       # after packaging the data Array, package the entire message for sending over network
+      Logger.info("TCPSessionData::Package", "Building sync request for clients."+
+        "\nData: (#{data_array.inspect})"+
+        "\nPacked: (#{@data.inspect})"
+      )
       return make_byte_string()
     end
     #--------------------------------------
@@ -296,6 +313,11 @@ class TCPsession
         return nil
       end
       # perform and additional proccessing to the data byte string if needed
+      Logger.info("TCPSessionData::Package", "Unpacking DATAMODE:(#{@data_mode})"+
+        "\nRaw (#{byte_string.inspect})"+
+        "\nUnpacked Array (#{data_array.inspect})"+
+        "\npackage (#{self.inspect})"
+      )
       case @data_mode
       when DATAMODE::STRING
         @data = @data.to_s
@@ -317,10 +339,8 @@ class TCPsession
       else
         Logger.error("TCPSessionData::Package", "In an unkown DATAMODE (#{@data_mode})")
       end
-      Logger.info("TCPSessionData::Package", "Unpacking byte string"+
-        "\nRaw (#{byte_string.inspect})"+
-        "\nUnpacked Array (#{data_array.inspect})"+
-        "\npackage (#{self.inspect})"
+      Logger.debug("TCPSessionData::Package", "Unpacking DATAMODE:(#{@data_mode})"+
+        "\nData: (#{@data.inspect})"
       )
       return true
     end

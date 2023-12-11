@@ -84,7 +84,7 @@ class ClientPool
   # Recived a request to sync clients from server session.
   def sync_requested(package)
     sync_data = package.client_data()
-    Logger.debug("ClientPool", "Local has recieved request to sync with client pool."+
+    Logger.warn("ClientPool", "Local has recieved request to sync with client pool."+
       "\npackage: (#{package.inspect})"+
       "\nclient_data: (#{sync_data.inspect})"
     )

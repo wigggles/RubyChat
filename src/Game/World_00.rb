@@ -8,11 +8,11 @@ class World_00 < GameWorld
   end
   #---------------------------------------------------------------------------------------------------------
   def update()
-    super()
+    return unless super()
   end
   #---------------------------------------------------------------------------------------------------------
   def draw()
-    super()
+    return unless super()
     @bgimg = GUI::BlobDraw.get_image({
       of: :round_rect, width: @view_width, height: @view_height, radius: 16, outlined: true
     }) if @bgimg.nil?
@@ -20,6 +20,7 @@ class World_00 < GameWorld
   end
   #---------------------------------------------------------------------------------------------------------
   def dispose()
+    @bgimg = nil
     super()
   end
 end
