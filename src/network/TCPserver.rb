@@ -45,10 +45,9 @@ class TCPserver
 
   #---------------------------------------------------------------------------------------------------------
   # What to do when a client sends information.
-  def session_thread_handle(client_session)
+  def session_thread_handle(client_session, description)
     # string data sent first is the client's session information
     session_init_data = client_session.await_data_msg()
-    Logger.debug("TCPserver", "New client: (#{session_init_data.inspect})")
     creation_time, null_client_id, server_time, package_mode, requested_name = session_init_data.to_a()
     duplicate_user = nil
     # client names/ids should not be raw bytes, so enforce some encoding limitations for the string requested
@@ -60,12 +59,12 @@ class TCPserver
       Logger.warn("TCPServer", "Duplicate user '#{duplicate_user}' tried to join.")
     else
       # welcome the new user client session and inform others of their arrival
-      client_session.description.set_name(requested_name)
-      client_name = client_session.description.username
-      Logger.debug("TCPserver", "Sending a server welcome to client session id: (#{client_name})")
-      send_client_a_msg(client_session, "Hello #{client_name}! #{client_pool.count()} clients.")
+      description.set_name(requested_name)
+      Logger.debug("TCPserver", "New client description: (#{description.inspect})")
+      sync_server_clients()
+      send_client_a_msg(client_session, "Hello #{description.username}! #{client_pool.count()} clients.")
       puts("Check name (#{client_session.inspect})")
-      send_clients_a_msg("#{client_name} joined! #{client_pool.count()} clients.", [client_name])
+      send_clients_a_msg("#{description.username} joined! #{client_pool.count()} clients.", [description.username])
       # while client connection remains open, recieve data from them, proccess it and notify other clients
       while incoming_data_byteString = client_session.await_data_msg()
         case incoming_data_byteString
@@ -91,11 +90,11 @@ class TCPserver
     # when the connection is no longer open or closed manually, dispose of the client
     client_session.close()
     if duplicate_user.nil?
-      send_clients_a_msg("#{client_session.description.username} left!")
+      send_clients_a_msg("#{description.username} left!")
     else
       send_clients_a_msg("Duplicate username '#{duplicate_user}' client rejected!")
     end
-    client_pool.delete(client_session.description.ref_id)
+    client_pool.delete(description.ref_id)
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -109,7 +108,20 @@ class TCPserver
   # Send a basic string to a single client.
   def send_client_a_msg(client_session, string_msg = "")
     outgoing_data = @@server_session.package_data(string_msg)
-    client_session.send_msg(outgoing_data, false)
+    client_session.send_msg(outgoing_data)
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  # Sync with clients user 'ref_id's to description data for their local use.
+  def sync_server_clients()
+    package = @@server_session.empty_data_package()
+    array_package = client_pool.pack_array_to_send()
+    outgoing_data = package.pack_dt_client([ClientPool::DATAMODE::ALL_CLIENTS, array_package])
+    send_bytes_to_everyone(outgoing_data)
+    Logger.debug("ClientPool", "Server is sending a request to sync clients:"+
+      "\nPool: (#{array_package.inspect})"+
+      "\nPackage: (#{outgoing_data.inspect})"
+    )
   end
   
   #---------------------------------------------------------------------------------------------------------
@@ -141,7 +153,6 @@ class TCPserver
     client_pool.each {|client_description|
       sleep(0.5) if TCPserver::FAKE_LATENCY # add artificial latency in seconds
       unless exclusions.include?(client_description.username)
-        puts("(#{client_description.inspect})")
         unless client_description.session_pointer.nil?
           client_description.session_pointer.send_msg(sessionData_byteString, false)
         end
@@ -172,9 +183,13 @@ class TCPserver
         break if @@tcpSocket.nil?
         new_client = @@tcpSocket.accept()
         new_session = TCPSessionData.new(new_client)
-        client_pool.add_new(new_session)
+        client_description = client_pool.add_new(new_session)
+        Logger.info("TCPserver", "New client was added into the pool:"+
+          "\n(#{client_description.inspect})"+
+          "\n(#{new_client.inspect})"
+        )
         Thread.new {
-          session_thread_handle(new_session)
+          session_thread_handle(new_session, client_description)
         }
       rescue => error
         case error

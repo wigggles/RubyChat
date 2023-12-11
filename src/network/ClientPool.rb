@@ -2,6 +2,9 @@
 # !!!   ClientPool.rb  |  Where all the clients get to swim together.
 #===============================================================================================================================
 class ClientPool
+  module DATAMODE
+    ALL_CLIENTS = 0
+  end
   #---------------------------------------------------------------------------------------------------------
   # Managable client object.
   class Client
@@ -32,15 +35,18 @@ class ClientPool
     return @net_session
   end
   #---------------------------------------------------------------------------------------------------------
-  def add_new(client_session)
-    case client_session
+  def add_new(client)
+    Logger.debug("ClientPool", "Adding to the client pool. [#{@clients.size}] (#{client.inspect})")
+    case client
     when TCPSessionData
-      new_client = Client.new(session_pointer: client_session)
+      new_client = Client.new(session_pointer: client)
       @clients << new_client
-      Logger.debug("ClientPool", "New client was added into the pool: (#{new_client.inspect})")
-      return true
+      return new_client
+    when ClientPool::Client
+      @clients << client
+      return client
     end
-    Logger.ERROR("ClientPool", "Failed to add new client: (#{client_session.inspect})")
+    Logger.ERROR("ClientPool", "Failed to add new client: (#{client.inspect})")
     return false
   end
   #---------------------------------------------------------------------------------------------------------
@@ -65,5 +71,27 @@ class ClientPool
   def delete(ref_id)
     found_client = find_client(search_term: ref_id)
     @clients.delete(found_client) if find_client
+  end
+  #---------------------------------------------------------------------------------------------------------
+  # Sync client that matches same ref_id, if no match add to pool.
+  def sync_client(client)
+    found_client = find_client(search_term: client.ref_id)
+    unless found_client
+      add_new(client)
+    end
+  end
+  #---------------------------------------------------------------------------------------------------------
+  # Recived a request to sync clients from server session.
+  def sync_requested(package)
+    sync_data = package.client_data()
+    Logger.debug("ClientPool", "Local has recieved request to sync with client pool. (#{sync_data.inspect})")
+    #@@client_pool
+  end
+  #---------------------------------------------------------------------------------------------------------
+  # Pack up the clients into an array for byte string conversion.
+  def pack_array_to_send()
+    return @clients.map() { |client|
+      [client.ref_id, client.username]
+    }
   end
 end

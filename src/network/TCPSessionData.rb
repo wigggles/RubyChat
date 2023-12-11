@@ -27,12 +27,12 @@ class TCPSessionData
     attr_reader :created_time, :latency_server, :latency_sender
     CALCULATE_LATENCY = true
     #--------------------------------------
-    BYTE_STRING = "q Z20 q n a*"
+    BYTE_STRING = "q Z10 q n a*"
     ARRAY_LENGTH = 5
     # The above defines how to deal with the string stream of data.
     #
     #    q    | 8-byte integer  | local creation time edian.
-    #    Z20  | 20 char bytes   | originating user id.
+    #    Z10  | 10 char bytes   | originating client id.
     #    q    | 8-byte integer  | server touched time edian.
     #    n    | 2-byte signed   | mode integer.
     #    a*   | take whats left | an arbritray length 'message' as a byte string value.
@@ -166,9 +166,14 @@ class TCPSessionData
     # If package is in @data_mode DATAMODE::CLIENT_SYNC bring order to the Array in @data.
     def client_data()
       return nil if @data_mode != DATAMODE::CLIENT_SYNC
+      unpacked_data = @data[1].chars.each_slice(Package::CLIENT_BYTES).map(&:join)
+      unpacked_data = unpacked_data.map() { |entry|
+        ref_id, username = entry.unpack(Package::BYTE_CLIENT)
+        [ref_id.delete("\00"), username.delete("\00")]
+      }
       return {
-        length: @data[0],
-        pool_data: @data[1].chars.each_slice(Package::CLIENT_BYTES).unpack(Package::BYTE_CLIENT)
+        packtype: @data[0],
+        pool_data: unpacked_data
       }
     end
     #--------------------------------------
@@ -226,7 +231,8 @@ class TCPSessionData
       packed_pool = pool_data.map() { |client|
         client.pack(Package::BYTE_CLIENT)
       }
-      @data = [packtype, packed_pool].pack(Package::BYTE_CLIENTSYNC)
+      Logger.info("TCPSessionData", "Sending to clients. (#{pool_data.inspect})")
+      @data = [packtype, packed_pool].flatten.pack(Package::BYTE_CLIENTSYNC)
       # after packaging the data Array, package the entire message for sending over network
       return make_byte_string()
     end
@@ -313,17 +319,17 @@ class TCPSessionData
         @data = @data.to_s
       when DATAMODE::CLIENT_SYNC
         @data = @data.unpack(Package::BYTE_CLIENTSYNC)
-        unless @data.length != Package::CLIENTSYNC_LENGTH
-          Logger.warn("TCPSessionData::Package", "DATAMODE::CLIENT package is malformed.")
+        unless @data.size == Package::CLIENTSYNC_LENGTH
+          Logger.warn("TCPSessionData::Package", "DATAMODE::CLIENT package is malformed. (#{@data.inspect})")
         end
       when DATAMODE::OBJECT
         @data = @data.unpack(Package::BYTE_OBJECT)
-        unless @data.length != Package::OBJECT_LENGTH
+        unless @data.length == Package::OBJECT_LENGTH
           Logger.warn("TCPSessionData::Package", "DATAMODE::OBJECT package is malformed.")
         end
       when DATAMODE::MAP_SYNC
         @data = @data.unpack(Package::BYTE_MAPSYNC)
-        unless @data.length != Package::MAPSYNC_LENGTH
+        unless @data.length == Package::MAPSYNC_LENGTH
           Logger.warn("TCPSessionData::Package", "DATAMODE::MAP_SYNC package is malformed.")
         end
       else
@@ -352,21 +358,24 @@ class TCPSessionData
     @creation_time = Time.now.utc()
     @socket = socket
     @@client_pool = ClientPool.new(self)
-    @@client_self = ClientPool::Client.new(username: username)
+    @@client_self = ClientPool::Client.new(username: username, session_pointer: self)
     request_sync_client()
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Check if provided user ref_id is the same one as the local session.
   def is_self?(this_user_id = nil)
     return @@client_self.ref_id == this_user_id
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Get local self's public description shown between clients connected to the same server.
   def description()
     return @@client_self
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Return all the currently known clients.
   def get_client_pool()
     return @@client_pool
   end
@@ -374,19 +383,8 @@ class TCPSessionData
   #---------------------------------------------------------------------------------------------------------
   # Request a change to @@client_self be synced by the server to other client sessions.
   def request_sync_client()
-    @@client_self
-  end
-
-  #---------------------------------------------------------------------------------------------------------
-  # Sync client details accross connected sessions.
-  def send_sync_clients()
-    @@client_pool
-  end
-
-  #---------------------------------------------------------------------------------------------------------
-  # Recived a request to sync clients from server session.
-  def recieve_sync_clients()
-    @@client_pool
+    Logger.debug("ClientPool", "Local is requesting a change to its public description. (#{@@client_self.inspect})")
+    @@client_pool.sync_client(@@client_self)
   end
 
   #---------------------------------------------------------------------------------------------------------

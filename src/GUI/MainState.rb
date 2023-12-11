@@ -114,6 +114,9 @@ class MainState
       else
         status_string = "(#{package.user_id})> #{package.data}"
       end
+    when TCPSessionData::Package::DATAMODE::CLIENT_SYNC
+      client_pool = @@parent_window.get_clients()
+      client_pool.sync_requested(package)
     when TCPSessionData::Package::DATAMODE::OBJECT
       if @@game_world.is_a?(GameWorld)
         @@game_world.world_object_sync(package.object_data())
