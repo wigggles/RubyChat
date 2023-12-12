@@ -43,8 +43,15 @@ module Configuration
   #---------------------------------------------------------------------------------------------------------
   # Get local subnet IP, (LAN)
   def self.getSelfIP()
-    remote_ip = URI.open('http://whatismyip.akamai.com').read
-    local_ip = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
+    begin
+      remote_ip = URI.open('http://whatismyip.akamai.com').read()
+      local_ip = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
+    rescue => error
+      Logger.error("Configuration", "Could not resolve public/local IPs, 'No Internet'?"+
+        "\n(#{error.inspect})",
+        tags: [:Network]
+      )
+    end
     return [remote_ip, local_ip]
   end
 

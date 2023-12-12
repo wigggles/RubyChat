@@ -245,8 +245,13 @@ class TCPsession
           tags: [:Network]
         )
         return nil
+      when Errno::EPIPE
+        Logger.error("TCPsession", "Socket connection between remote is broken.",
+          tags: [:Network]
+        )
+        return nil
       else
-        Logger.error("TCPsession", "Read: #{error}",
+        Logger.error("TCPsession", "Read: #{error.inspect}",
           tags: [:Network]
         )
       end

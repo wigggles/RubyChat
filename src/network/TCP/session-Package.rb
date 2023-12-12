@@ -5,7 +5,7 @@ class TCPsession
   #---------------------------------------------------------------------------------------------------------
   # The expanded more workable type of socket data. Gives the session byte data string workable structure.
   class Package
-    attr_reader :user_id, :data_mode, :data
+    attr_reader :ref_id, :data_mode, :data
     attr_reader :created_time, :latency_server, :latency_sender
     CALCULATE_LATENCY = true
     #--------------------------------------
@@ -59,9 +59,9 @@ class TCPsession
     # Knowing the data is half the battle, validate package DATAMODE is being utilized properly.
     def has_valid_data?
       # check the basics first
-      return false if @user_id.nil?
+      return false if @ref_id.nil?
       return false unless (
-        @user_id.length > 0 &&
+        @ref_id.length > 0 &&
         @created_time.is_a?(Time) &&
         @data_mode.is_a?(Integer) &&
         !@data.nil?
@@ -98,8 +98,8 @@ class TCPsession
     end
     #--------------------------------------
     # Create a new Package object to handle byte strings as a class to make interactions more enjoyable.
-    def initialize(byte_string = nil, user_id = nil)
-      @user_id = user_id || ""
+    def initialize(byte_string = nil, ref_id = nil)
+      @ref_id = ref_id || ""
       @arrival_time = nil  # On moment of 'calculate_latency' when package is recieved. 
       @latency_server = 0  # Time it took server to send the packaged message till recieving it.
       @latency_sender = 0  # Time from the originating sender packaging the message till recieving it.
@@ -220,7 +220,7 @@ class TCPsession
     def make_byte_string()
       byte_string = [
         @created_time.to_f() * 10000000,
-        @user_id.to_s(),
+        @ref_id.to_s(),
         @srvr_time_stmp.to_f() * 10000000,
         @data_mode.to_i(),
         @data.to_s()
@@ -344,7 +344,7 @@ class TCPsession
       begin
         ct_time = (data_array[0] / 10000000.0)
         @created_time     = Time.at(ct_time)            # local time message was created
-        @user_id          = data_array[1].delete("\00") # client_id with byte padding removed
+        @ref_id           = data_array[1].delete("\00") # client_id with byte padding removed
         sv_time = (data_array[2] / 10000000.0)
         @srvr_time_stmp   = Time.at(sv_time)            # time when server touched package
         @data_mode        = data_array[3].to_i          # extra data packaging mode defined
@@ -408,7 +408,7 @@ class TCPsession
     #--------------------------------------
     # Return the byte string message package header and its raw @data as an Array object.
     def to_a()
-      return [@created_time, @user_id, @srvr_time_stmp, @data_mode, @data]
+      return [@created_time, @ref_id, @srvr_time_stmp, @data_mode, @data]
     end
     #--------------------------------------
     # Return the package as a byte string.

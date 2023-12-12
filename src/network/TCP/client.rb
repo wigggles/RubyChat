@@ -53,30 +53,46 @@ class TCPclient
   # When the local client first makes contact with the server, the server will report back some information.
   def server_pool_cannonball()
     splash = @@client_session.await_data_msg()
-    report = splash.data.slice(ClientPool::REF_BYTE_SIZE)[0]
+    # locally verify the reporting splash from the server's Client pool
+    case splash
+    when TCPsession::Package
+      report = splash.data.to_s()
+    when String
+      report = splash.chomp.to_s()
+    end
     Logger.debug("TCPclient", "Server cannonball:(#{report.inspect})",
       tags: [:Network, :Client]
     )
+    return session.description.set_ref_id(report)
   end
 
   #---------------------------------------------------------------------------------------------------------
   # This is a blocking function, it uses two threads to send/recieve data.
-  def connect(parent_window = nil)
-    if parent_window.nil?
-      thread_sd = Thread.new { local_sendData() } 
+  def connect(report_to: nil)
+    # attempt to start a new thread, but catch exceptions thrown if anything dies along the way
+    begin 
+      if report_to.nil?
+        thread_sd = Thread.new { local_sendData() } 
+      end
+      # jump on in, see what the server says about it
+      thread_rfs = Thread.new { 
+        receive_from_server(report_to: report_to) if server_pool_cannonball()
+      }
+      thread_sd.join() if report_to.nil?
+      thread_rfs.join()
+    rescue => error
+      Logger.error("TCPclient", "Listening Thread died, connection with remote closed."+
+        "\n(#{error.inspect})",
+        tags: [:Network]
+      )
+      report_to = nil
     end
-    thread_rfs = Thread.new { 
-      server_pool_cannonball()
-      receive_from_server(parent_window) 
-    }
-    thread_sd.join() if parent_window.nil?
-    thread_rfs.join() 
-    shutdown() unless parent_window.nil?
+    shutdown() unless report_to.nil?
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Update loop, read and print lines from server's connected socket.
-  def receive_from_server(parent_window = nil)
+  def receive_from_server(report_to: nil)
     return unless @error.nil?
     while incoming_data_package = @@client_session.await_data_msg()
       incoming_data_package.calculate_latency() # calculate client server latency
@@ -90,8 +106,8 @@ class TCPclient
         else
           puts("(#{from_user_id})> #{data}")
         end
-      elsif parent_window
-        parent_window.send_data_into_state(incoming_data_package)
+      elsif report_to
+        report_to.send_data_into_state(incoming_data_package)
       else
         Logger.error("TCPclient", "Recieved data from the server but has no way to display it.",
           tags: [:Network]

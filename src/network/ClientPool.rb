@@ -18,6 +18,17 @@ class ClientPool
       @session_pointer = session_pointer
     end
     #--------------------------------------
+    def set_ref_id(new_id)
+      return nil unless new_id.is_a?(String)
+      return nil unless new_id.length >= ClientPool::REF_BYTE_SIZE
+      ref_id = new_id[0...ClientPool::REF_BYTE_SIZE]
+      Logger.info("ClientPool::Client", "Changing Client ref_id:(#{@ref_id.inspect}) to:(#{ref_id.inspect})",
+        tags: [:Client]
+      )
+      @ref_id = ref_id
+      return @ref_id
+    end
+    #--------------------------------------
     def set_name(requested_name)
       @username = requested_name
     end
@@ -80,7 +91,13 @@ class ClientPool
   end
   #---------------------------------------------------------------------------------------------------------
   def find_client(by: :ref_id, search_term: '')
-    Logger.debug("ClientPool", "Searching client pool for: [#{by}](#{search_term})",
+    unless search_term.is_a?(String)
+      Logger.warn("ClientPool", "Searching client pool requires a String as the search_term. (#{search_term.inspect})",
+        tags: [:Client]
+      )
+      return nil
+    end
+    Logger.debug("ClientPool", "Searching client pool for: [#{by}](#{search_term.inspect})",
       tags: [:Client]
     )
     if search_term.nil?
@@ -97,7 +114,7 @@ class ClientPool
     sml_string_list = located.map() { |client|
       [client.ref_id, client.username]
     }
-    Logger.info("ClientPool", "While searching found [#{sml_string_list.size}] clients for:[#{by}](#{search_term})"+
+    Logger.info("ClientPool", "While searching found [#{sml_string_list.size}] clients for:[#{by}](#{search_term.inspect})"+
       "\nlocated: (#{sml_string_list.inspect()})",
       tags: [:Client]
     )
@@ -114,10 +131,10 @@ class ClientPool
   # Sync client that matches same ref_id, if no match add to pool.
   def sync_client(client)
     found_client = find_client(search_term: client.ref_id)
-    unless found_client
-      add_new(client)
-    else
+    if found_client
       update_client(found_client, client)
+    else
+      add_new(client)
     end
   end
   #---------------------------------------------------------------------------------------------------------

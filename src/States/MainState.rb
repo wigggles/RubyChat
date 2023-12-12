@@ -113,8 +113,8 @@ class MainState
   def proccess_incoming_session_dataPackage(package)
     # if the package does not have a user name, assume it originated from self. TODO: A better method here.
     own_package = true
-    unless package.user_id.nil?
-      own_package = @@parent_window.current_session.is_self?(package.user_id)
+    unless package.ref_id.nil?
+      own_package = @@parent_window.current_session.is_self?(package.ref_id)
     end
     status_string = ""
     Logger.debug("MainState", "Recieved a new network_package in DATAMODE:(#{package.data_mode}).",
@@ -129,16 +129,22 @@ class MainState
       if own_package
         status_string = "(me)> #{package.data}"
       else
-        client_description = @@parent_window.get_clients.find_client(search_term: package.user_id)
+        client_description = @@parent_window.get_clients.find_client(search_term: package.ref_id)
         if client_description
           status_string = "(#{client_description.username})> #{package.data}"
         else
-          status_string = "(#{package.user_id})> #{package.data}"
+          status_string = "(#{package.ref_id})> #{package.data}"
         end
       end
     when TCPsession::Package::DATAMODE::CLIENT_SYNC
-      client_pool = @@parent_window.get_clients()
-      client_pool.sync_requested(package)
+      unless @@parent_window.is_server?()
+        client_pool = @@parent_window.get_clients()
+        client_pool.sync_requested(package)
+      else
+        Logger.debug("MainState", "Server is syncing the client pool.",
+          tags: [:State]
+        )
+      end
     when TCPsession::Package::DATAMODE::OBJECT
       if @@game_world.is_a?(GameWorld)
         @@game_world.world_object_sync(package.object_data())

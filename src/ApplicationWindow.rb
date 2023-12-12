@@ -4,7 +4,6 @@
 require 'socket'
 require 'gosu'
 
-require './src/internal/Logger.rb'
 require './src/internal/InputControls.rb'
 
 require './src/network/ClientPool.rb'
@@ -109,7 +108,7 @@ class ApplicationWindow < Gosu::Window
         if @client.error.nil?
           @client.start_session(@username)
           start_client_session()
-          @client.connect(self)
+          @client.connect(report_to: self)
         else
           Logger.error("ApplicationWindow", "Failed to start client session.")
         end
