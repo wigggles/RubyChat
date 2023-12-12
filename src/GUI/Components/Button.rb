@@ -53,7 +53,9 @@ class GUI::Button < GUI::Component
     test = @owner.send(@action) || nil
     if test.nil?
       return false if @disposed
-      Logger.error("Button", "Callback method '#{@action}' in #{@owner} needs to return true.")
+      Logger.warn("Button", "Callback method '#{@action}' in #{@owner} needs to return true unless error.",
+        tags: [:GUI]
+      )
       return false
     end
     @has_actioned = true

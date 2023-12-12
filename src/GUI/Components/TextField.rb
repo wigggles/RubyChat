@@ -42,7 +42,9 @@ class GUI::TextField < GUI::Component
     test = @owner.send(@action, @text) || nil
     if test.nil?
       return false if @disposed 
-      Logger.error("TextField", "Callback method '#{@action}' in #{@owner} needs to return true.")
+      Logger.warn("TextField", "Callback method '#{@action}' in #{@owner} needs to return true unless error.",
+        tags: [:GUI]
+      )
       return false
     end
     return true

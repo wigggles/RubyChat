@@ -2,7 +2,6 @@
 # !!!   ConsoleBox.rb | A box that displays Kernel log information to the program's screen.
 #===============================================================================================================================
 class GUI::ConsoleBox < GUI::Component
-  MAX_LINES = 18 # max number of lines to draw onto the screen, prevents lines being draw off screen.
   #---------------------------------------------------------------------------------------------------------
   #D: Create object Klass.
   def initialize(options = {})
@@ -17,6 +16,7 @@ class GUI::ConsoleBox < GUI::Component
     @line_width = (@width / max_char_width).round() #DV Max characters in a line before wrapping.
     @viewable_text = []
     @prevous_text = ""
+    @max_lines = @height / font_size # max number of lines to draw, prevents lines being draw off screen.
     super(options)
   end
   #---------------------------------------------------------------------------------------------------------
@@ -37,8 +37,8 @@ class GUI::ConsoleBox < GUI::Component
   #D: Writes to console.
   def display_string(text = "")
     @viewable_text.unshift(text)
-    if @viewable_text.size >= MAX_LINES
-      @viewable_text.delete_at(MAX_LINES)
+    if @viewable_text.size >= @max_lines
+      @viewable_text.delete_at(@max_lines)
     end
   end
   #---------------------------------------------------------------------------------------------------------

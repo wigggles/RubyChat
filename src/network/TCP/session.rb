@@ -26,8 +26,8 @@ class TCPsession
   def initialize(socket, username = "")
     @creation_time = Time.now.utc()
     @socket = socket
-    @@client_pool = ClientPool.new(self)
     @@client_self = ClientPool::Client.new(username: username, session_pointer: self)
+    @@client_pool = ClientPool.new(self)
     request_sync_client()
   end
 
@@ -53,7 +53,9 @@ class TCPsession
   #---------------------------------------------------------------------------------------------------------
   # Request a change to @@client_self be synced by the server to other client sessions.
   def request_sync_client()
-    Logger.info("TCPsession", "Local client is requesting a change to its public description. (#{@@client_self.inspect})")
+    Logger.info("TCPsession", "Local client is requesting a change to its public description. (#{@@client_self.inspect})",
+      tags: [:Network, :Package, :Client]
+    )
     @@client_pool.sync_client(@@client_self)
   end
 
@@ -73,12 +75,16 @@ class TCPsession
     when String
       character_count = data_to_send.length()
       if character_count > 128
-        Logger.warn("TCPsession", "Attempting to send a message that is too long. #{character_count}")
+        Logger.warn("TCPsession", "Attempting to send a message that is too long. #{character_count}",
+          tags: [:Network]
+        )
         data_to_send = "'msg too long' #{character_count}"
       end
       byte_string_package = new_data_package.get_packed_string(Package::DATAMODE::STRING, data_to_send)
     else
-      Logger.error("TCPsession", "Does not know how to send data of class type: #{data_to_send.class}")
+      Logger.error("TCPsession", "Does not know how to send data of class type: #{data_to_send.class}",
+        tags: [:Network]
+      )
       return nil
     end
     return byte_string_package
@@ -89,13 +95,19 @@ class TCPsession
   def unpackage_data(received_data)
     case received_data
     when TCPsession::Package
-      Logger.info("TCPsession", "Recieved an already packaged data byte string.")
+      Logger.info("TCPsession", "Recieved an already packaged data byte string.",
+        tags: [:Network, :Package]
+      )
       return received_data
     when String
-      Logger.info("TCPsession", "Creating new Package from raw byte string data.")
+      Logger.info("TCPsession", "Creating new Package from raw byte string data.",
+        tags: [:Network, :Package]
+      )
       return Package.new(received_data)
     else
-      Logger.warn("TCPsession", "Does not know what it recieved as data. (#{received_data.class})")
+      Logger.warn("TCPsession", "Does not know what it recieved as data. (#{received_data.class})",
+        tags: [:Network, :Package]
+      )
     end
     return nil
   end
@@ -108,7 +120,9 @@ class TCPsession
     case sending_data
     when TCPsession::Package
       if sending_data.has_error?
-        Logger.error("TCPsession", "Attempting to send a byte package with errors.")
+        Logger.error("TCPsession", "Attempting to send a byte package with errors.",
+          tags: [:Network]
+        )
         return nil
       else
         byte_string_package = sending_data.to_byte_s()
@@ -121,20 +135,30 @@ class TCPsession
           TCPsession::FORCE_ENCODING , undef: :replace, invalid: :replace, replace: ""
         )
         if before_encoding.length != sending_data.length
-          Logger.error("TCPsession", "During send string encoding removed some bytes.")
+          Logger.error("TCPsession", "During send string encoding removed some bytes.",
+            tags: [:Network]
+          )
         end
       end
       if pack_data
-        Logger.info("TCPsession", "Packaging String data to send: (#{sending_data.inspect})")
+        Logger.info("TCPsession", "Packaging String data to send: (#{sending_data.inspect})",
+          tags: [:Network, :Package]
+        )
         byte_string_package = package_data(sending_data)
-        Logger.info("TCPsession", "send_msg() raw data: (#{byte_string_package.inspect})")
+        Logger.info("TCPsession", "send_msg() raw data: (#{byte_string_package.inspect})",
+          tags: [:Network, :Package]
+        )
         socket_puts(byte_string_package)
       else
-        Logger.info("TCPsession", "Sending a raw String: (#{sending_data.inspect})")
+        Logger.info("TCPsession", "Sending a raw String: (#{sending_data.inspect})",
+          tags: [:Network, :Package]
+        )
         socket_puts(sending_data)
       end
     else
-      Logger.error("TCPsession", "Can only send String messages through the socket. not: #{sending_data.class}")
+      Logger.error("TCPsession", "Can only send String messages through the socket. not: #{sending_data.class}",
+        tags: [:Network]
+      )
       return nil
     end
     # return success
@@ -145,14 +169,20 @@ class TCPsession
   # Try catch error for sending with socket so application doens't crash if it fails to put sting data.
   # All outgoing data flows through here when using a TCPsession object.
   def socket_puts(string)
-    Logger.debug("TCPsession", "Socket.puts raw String about to send. (#{string.inspect})")
+    Logger.debug("TCPsession", "Socket.puts raw String about to send. (#{string.inspect})",
+      tags: [:Network]
+    )
     # do some checks on the argument provided before proceeding
     unless string.is_a?(String)
-      Logger.error("TCPsession", "Can only Socket.puts String objects.")
+      Logger.error("TCPsession", "Can only Socket.puts String objects.",
+        tags: [:Network]
+      )
       return false
     end
     if string.length > (TCPsession::USE_RAW_STRING_PACKAGE ? 512 : 1024) # max bytes able to send
-      Logger.error("TCPsession", "Socket.puts String is too large to send.")
+      Logger.error("TCPsession", "Socket.puts String is too large to send.",
+        tags: [:Network]
+      )
       return false
     end
     # attempt to send the message over network
@@ -171,11 +201,17 @@ class TCPsession
     rescue => error
       case error
       when Errno::EPIPE
-        Logger.error("TCPsession", "Can not send when socket is closed.")
+        Logger.error("TCPsession", "Can not send when socket is closed.",
+          tags: [:Network]
+        )
       when Errno::ENOTCONN
-        Logger.error("TCPsession", "Socket is open on this end, but the client session is not.")
+        Logger.error("TCPsession", "Socket is open on this end, but the client session is not.",
+          tags: [:Network]
+        )
       else
-        Logger.error("TCPsession", "Write: #{error.inspect}")
+        Logger.error("TCPsession", "Write: #{error.inspect}",
+          tags: [:Network]
+        )
       end
       return false
     end
@@ -199,13 +235,19 @@ class TCPsession
     rescue => error
       case error
       when Errno::ECONNRESET
-        Logger.warn("TCPsession", "Client forcibly closed connection.")
+        Logger.warn("TCPsession", "Client forcibly closed connection.",
+          tags: [:Network]
+        )
         return nil
       when SocketClosedException
-        Logger.warn("TCPsession", "The other end of the socket forcibly closed its connection.")
+        Logger.warn("TCPsession", "The other end of the socket forcibly closed its connection.",
+          tags: [:Network]
+        )
         return nil
       else
-        Logger.error("TCPsession", "Read: #{error}")
+        Logger.error("TCPsession", "Read: #{error}",
+          tags: [:Network]
+        )
       end
     end
     # if connection is was still responsive, proccess their responces
@@ -215,7 +257,9 @@ class TCPsession
         TCPsession::FORCE_ENCODING , undef: :replace, invalid: :replace, replace: ""
       )
       if before_encoding.length != response_string.length
-        Logger.error("TCPsession", "When recieving a new string encoding removed some bytes.")
+        Logger.error("TCPsession", "When recieving a new string encoding removed some bytes.",
+          tags: [:Network, :Package]
+        )
       end
     else
       return nil

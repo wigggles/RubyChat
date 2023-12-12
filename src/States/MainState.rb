@@ -58,7 +58,10 @@ class MainState
   def get_new_network_package()
     data_package = @@parent_window.getNew_session_package()
     if data_package.nil?
-      Logger.warn("MainState", "TextField could not create a new session package for sending data.")
+      # can also just assume that this client session is not connected to a server if nil
+      Logger.warn("MainState", "TextField could not create a new session package for sending data.",
+        tags: [:State]
+      )
       @console_box.push_text("> You are not currently connected to any server.") unless @console_box.nil?
     end
     return data_package
@@ -66,7 +69,9 @@ class MainState
   #---------------------------------------------------------------------------------------------------------
   # Called when action is used on a CheckBox.
   def checkbox_action(state = false)
-    Logger.info("MainState", "CheckBox was toggled. (#{state.inspect})")
+    Logger.info("MainState", "CheckBox was toggled. (#{state.inspect})",
+      tags: [:GUI, :State]
+    )
     return true
   end
   #---------------------------------------------------------------------------------------------------------
@@ -75,7 +80,9 @@ class MainState
     data_package = get_new_network_package()
     return nil if data_package.nil?
     data_package.pack_dt_string("Spam 5 messages Button used.")
-    Logger.info("MainState", "Button sending 5 session data packages.")
+    Logger.info("MainState", "Button sending 5 session data packages.",
+      tags: [:GUI, :State]
+    )
     5.times { |time|
       @@parent_window.send_socket_data(data_package)
     }
@@ -89,10 +96,14 @@ class MainState
       data_package = get_new_network_package()
       return nil if data_package.nil?
       data_package.pack_dt_string(string)
-      Logger.info("MainState", "TextField to send String session data package. (#{data_package.inspect})")
+      Logger.info("MainState", "TextField to send String session data package. (#{data_package.inspect})",
+        tags: [:GUI, :State]
+      )
       @@parent_window.send_socket_data(data_package)
     else
-      Logger.info("MainState", "TextField sending String as socket data. (#{string.inspect})")
+      Logger.info("MainState", "TextField sending String as socket data. (#{string.inspect})",
+        tags: [:GUI, :State]
+      )
       @@parent_window.send_socket_data(string)
     end
     return true
@@ -100,10 +111,18 @@ class MainState
   #---------------------------------------------------------------------------------------------------------
   # If network service is working with a TCPsession::Package handle how the incoming data is used.
   def proccess_incoming_session_dataPackage(package)
-    own_package = @@parent_window.current_session.is_self?(package.user_id)
+    # if the package does not have a user name, assume it originated from self. TODO: A better method here.
+    own_package = true
+    unless package.user_id.nil?
+      own_package = @@parent_window.current_session.is_self?(package.user_id)
+    end
     status_string = ""
-    Logger.debug("MainState", "Recieved a new network_package in DATAMODE:(#{package.data_mode}).")
-    Logger.info("MainState", "Processing network_package\nPackage:(#{package.inspect}).")
+    Logger.debug("MainState", "Recieved a new network_package in DATAMODE:(#{package.data_mode}).",
+      tags: [:State]
+    )
+    Logger.info("MainState", "Processing network_package\nPackage:(#{package.inspect}).",
+      tags: [:State]
+    )
     # behave based on packaged data type
     case package.data_mode
     when TCPsession::Package::DATAMODE::STRING
@@ -124,13 +143,17 @@ class MainState
       if @@game_world.is_a?(GameWorld)
         @@game_world.world_object_sync(package.object_data())
       else
-        Logger.error("MainState", "Recieved an object data package but doesn't have an active GameWorld.")
+        Logger.error("MainState", "Recieved an object data package but doesn't have an active GameWorld.",
+          tags: [:State]
+        )
       end
     when TCPsession::Package::DATAMODE::MAP_SYNC
       if @@game_world.is_a?(GameWorld)
         @@game_world.world_sync(package.mapsync_data())
       else
-        Logger.error("MainState", "Recieved a map sync data package but doesn't have an active GameWorld.")
+        Logger.error("MainState", "Recieved a map sync data package but doesn't have an active GameWorld.",
+          tags: [:State]
+        )
       end
     else
       Logger.error("MainState", "Recieved a data package set in a mode it doesn't know. (#{package.inspect})")
@@ -150,19 +173,29 @@ class MainState
       case package.data_mode
       when TCPsession::Package::DATAMODE::STRING
         display_string = proccess_incoming_session_dataPackage(package)
-        Logger.debug("MainState", "Recieved string package, displaying message. (#{display_string.inspect})")
+        Logger.debug("MainState", "Recieved string package, displaying message. (#{display_string.inspect})",
+          tags: [:State]
+        )
       when TCPsession::Package::DATAMODE::CLIENT_SYNC
-        Logger.debug("MainState", "Recieved client package, syncing with it.")
+        Logger.debug("MainState", "Recieved client package, syncing with it.",
+          tags: [:State]
+        )
         proccess_incoming_session_dataPackage(package)
       else
         # do nothing with the package that was recieved
-        Logger.info("MainState", "Recieved network packaged data (#{package.inspect})")
+        Logger.info("MainState", "Recieved network packaged data (#{package.inspect})",
+          tags: [:State]
+        )
       end
     when String
       display_string = package
-      Logger.info("MainState", "Recieved network raw string data (#{package.inspect})")
+      Logger.info("MainState", "Recieved network raw string data (#{package.inspect})",
+        tags: [:State]
+      )
     else
-      Logger.warn("MainState", "GUI malformed data passage. #{package.inspect}")
+      Logger.warn("MainState", "GUI malformed data passage. #{package.inspect}",
+        tags: [:State]
+      )
       display_string = "!!network data error!!"
     end
     # show the message in the UI by pushing the text into ConsoleBox component

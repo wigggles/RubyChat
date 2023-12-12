@@ -27,7 +27,9 @@ class GUI::CheckBox < GUI::Button
     test = @owner.send(@action, @toggled) || nil
     if test.nil?
       return false if @disposed
-      Logger.error("CheckBox", "Callback method '#{@action}' in #{@owner} needs to return true.")
+      Logger.warn("CheckBox", "Callback method '#{@action}' in #{@owner} needs to return true unless error.",
+        tags: [:GUI]
+      )
       return false
     end
     @has_actioned = true

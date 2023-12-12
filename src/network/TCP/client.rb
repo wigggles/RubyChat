@@ -18,16 +18,21 @@ class TCPclient
       @error = true
       case error
       when Errno::ECONNREFUSED
-        Logger.warn("TCPclient", "Reporting server connection refused.")
+        Logger.warn("TCPclient", "Reporting server connection refused.",
+          tags: [:Network]
+        )
       else
-        Logger.error("TCPclient", "#{error}")
+        Logger.error("TCPclient", "#{error}",
+          tags: [:Network]
+        )
       end
     end
     # print additional information about session status
     Logger.info("TCPclient", "Client is at addresses:"+
       "\n\tRemote: #{@@remote_ip}:#{Configuration::PORT}"+
       "\n\tLAN: #{@@local_ip}:#{Configuration::PORT}"+
-      "\n\tlocalhost:#{Configuration::PORT}"
+      "\n\tlocalhost:#{Configuration::PORT}",
+      tags: [:Network]
     )
   end
 
@@ -63,7 +68,9 @@ class TCPclient
     while incoming_data_package = @@client_session.await_data_msg()
       incoming_data_package.calculate_latency() # calculate client server latency
       time_stmp, from_user_id, srvr_time_stmp, data_mode, data = incoming_data_package.to_a()
-      Logger.debug("TCPclient", "Recieved server package from: (#{from_user_id.inspect})")
+      Logger.debug("TCPclient", "Recieved server package from: (#{from_user_id.inspect})",
+        tags: [:Network, :Package]
+      )
       if Configuration::CLI_MODE
         if @@client_session.is_self?(from_user_id)
           puts("(me)> #{data}")
@@ -73,7 +80,9 @@ class TCPclient
       elsif parent_window
         parent_window.send_data_into_state(incoming_data_package)
       else
-        Logger.error("TCPclient", "Recieved data from the server but has no way to display it.")
+        Logger.error("TCPclient", "Recieved data from the server but has no way to display it.",
+          tags: [:Network]
+        )
       end
     end
   end
@@ -92,13 +101,19 @@ class TCPclient
     return if @error
     case data
     when String
-      Logger.debug("TCPclient", "Sending String data.")
+      Logger.debug("TCPclient", "Sending String data.",
+        tags: [:Network]
+      )
       data = data.chomp()
     when TCPsession::Package
-      Logger.debug("TCPclient", "Sending TCPsession::Package data.")
+      Logger.debug("TCPclient", "Sending TCPsession::Package data.",
+        tags: [:Network, :Package]
+      )
       data.set_creation_time()
     else
-      Logger.error("TCPclient", "Attempting to send data type it doesnt recognize. (#{data.class})")
+      Logger.error("TCPclient", "Attempting to send data type it doesnt recognize. (#{data.class})",
+        tags: [:Network]
+      )
       return nil
     end
     @@client_session.send_msg(data)

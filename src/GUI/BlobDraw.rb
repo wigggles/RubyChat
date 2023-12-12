@@ -80,7 +80,9 @@ module GUI::BlobDraw
         return Gosu::Image.new(GUI::BlobDraw::Circle.new(opt))
       end
     else
-      Logger.error("BlobDraw", "Does not know how to draw a (#{of_type})")
+      Logger.error("BlobDraw", "Does not know how to draw a (#{of_type})",
+        tags: [:GUI]
+      )
     end
   end
   #---------------------------------------------------------------------------------------------------------

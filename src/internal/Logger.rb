@@ -44,34 +44,51 @@ module Logger
     # Can do puts/prints, draw in GUI, maybe to file?
     CONFIG = {
       Level::IGNORE => { 
-        to_console: false, to_gui: false, to_file: false, show_location: false, use_color: nil
+        use_flags:false, to_console:false, to_gui:false, to_file:false, show_location:false, use_color: nil
       },
       Level::ERROR  => {
-        to_console:  true, to_gui:  true, to_file: false, show_location: true, use_color: TermColor::RED
+        use_flags:false, to_console:true , to_gui:true , to_file:false, show_location:true , use_color: TermColor::RED
       },
       Level::WARN   => {
-        to_console:  true, to_gui:  true, to_file: false, show_location: true, use_color: TermColor::YELLOW
+        use_flags:false, to_console:true , to_gui:true , to_file:false, show_location:true , use_color: TermColor::YELLOW
       },
       Level::DEBUG  => {
-        to_console:  true, to_gui: false, to_file: false, show_location: true, use_color: TermColor::GREEN
+        use_flags:true , to_console:true , to_gui:false, to_file:false, show_location:true , use_color: TermColor::GREEN
       },
       Level::INFO   => {
-        to_console:  true, to_gui: false, to_file: false, show_location: false, use_color: TermColor::BLUE
+        use_flags:true , to_console:true , to_gui:false, to_file:false, show_location:false, use_color: TermColor::BLUE
       }
     }
   end
   # Runtime configuration constants defined below.
-  LEVEL = Level::INFO      # What level of logging to provide filtering for.
-  USE_CALL_TRACING = true   # When Logger is used, show where it was called from in the console.
+  LEVEL = Level::INFO       # What level of logging to provide filtering for.
+  USE_CALL_TRACING  = true  # When Logger is used, show where it was called from in the console.
   INCLUDE_TIMESTAMP = true  # Timestamp log entry.
+  # Only shows logs with matching filter tag configuration.
+  ENABLE_TAGS = true
+  FILTER_TAGS = {
+    GUI:     false,
+    State:   false,
+    Network: false,
+    Package: false,
+    Client:   true
+  }
   #--------------------------------------
   # If sharing string with a GUI object, ber sure that it bound for method calling required to recieve arguments.
   @@bound_ApplicationWindow = nil
   @@paused = false
   #---------------------------------------------------------------------------------------------------------
   # For most part all logging levels behave the same when called.
-  def self.handle(level, lable, msg)
+  def self.handle(level, lable, msg, tags: [])
     if Level::CONFIG[level][:to_console]
+      # there can be a lot of log information, provide tag filters
+      if Logger::ENABLE_TAGS && Logger::Level::CONFIG[level][:use_flags] && tags.size > 0
+        show_log = false
+        tags.each() { |log_tag|
+          show_log |= Logger::FILTER_TAGS[log_tag] # has any log tag enabled on it
+        }
+        return nil unless show_log
+      end
       # add timestamp into the logger
       if INCLUDE_TIMESTAMP
         current_time = Time.now()
@@ -100,34 +117,35 @@ module Logger
     end
     # if there is a GUI write into that as well
     self.write_to_gui(lable, msg) if Level::CONFIG[level][:to_gui]
+    return true
   end
   #---------------------------------------------------------------------------------------------------------
-  def self.error(title = "", msg = "")
+  def self.error(title = "", msg = "", tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::ERROR
     lable = "ERROR: (#{title})"
-    self.handle(Level::ERROR, lable, msg)
+    self.handle(Level::ERROR, lable, msg, tags: tags)
   end
   #---------------------------------------------------------------------------------------------------------
-  def self.warn(title = "", msg = "")
+  def self.warn(title = "", msg = "", tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::WARN
     lable = "WARN: (#{title})"
-    self.handle(Level::WARN, lable, msg)
+    self.handle(Level::WARN, lable, msg, tags: tags)
   end
   #---------------------------------------------------------------------------------------------------------
-  def self.debug(title = "", msg = "")
+  def self.debug(title = "", msg = "", tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::DEBUG
     lable = "DEBUG: (#{title})"
-    self.handle(Level::DEBUG, lable, msg)
+    self.handle(Level::DEBUG, lable, msg, tags: tags)
   end
   #---------------------------------------------------------------------------------------------------------
-  def self.info(title = "", msg = "")
+  def self.info(title = "", msg = "", tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::INFO
     lable = "INFO: (#{title})"
-    self.handle(Level::INFO, lable, msg)
+    self.handle(Level::INFO, lable, msg, tags: tags)
   end
   #---------------------------------------------------------------------------------------------------------
   # Show where the Logger call originated from.
