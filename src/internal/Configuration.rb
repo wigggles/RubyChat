@@ -11,6 +11,7 @@
 # http://ident.me
 # http://bot.whatismyipaddress.com
 #===============================================================================================================================
+require 'set'
 require 'open-uri'
 
 Thread.report_on_exception = true # Threads report back fail

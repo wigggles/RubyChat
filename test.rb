@@ -4,34 +4,34 @@
 require './src/internal/Configuration.rb'
 
 module Tests
-  MAX_NEW_ID_TRYS = 100_000
+  MAX_NEW_ID_TRYS = 1_000_000
   #---------------------------------------------------------------------------------------------------------
   # Generate a bunch of new id's and check to see if any duplicates are found.
   def self.test_random_ids()
     puts("Checking if able to reliably generate random ids.")
     trys = 0
-    ids  = []
+    ids  = Set.new()
     dupe = false
     new_id = nil
     start_time = Time.now
     while !dupe
       threads = []
-      new_ids = []
-      100.times() { |i| # Max number running at the same time is limited to the system environment, this requests 100 "jobs"
-        new_ids << Configuration.generate_new_ref_id(as_string: true)
-        #new_ids << Configuration.generate_new_ref_id(as_string: true, packed: true).unpack('H*')[0]
+      # Max number of threads running at the same time is limited to the system environment, this requests 10 "jobs"
+      10.times() { |t|
+        thread = Thread.new { # each thread generates 10 new ids
+          1000.times() { |i| 
+            #new_id = Configuration.generate_new_ref_id(as_string: false)
+            new_id = Configuration.generate_new_ref_id(as_string: true)
+            #new_id = Configuration.generate_new_ref_id(as_string: true, packed: true).unpack('H*')[0]
+            dupe = new_id unless ids.add?(new_id)
+          }
+        }
+        # collect the threads for joining together later
+        threads << thread
       }
-      threads.each() { thread.join() } # wait to sync all thread "job" work is done here
-      puts("Trys: (#{trys}) ids: [\n\t#{new_ids[0..10].join(",\n\t")} ]") if (trys % 10_000) == 0
-      new_ids.each() {|new_id|
-        if ids.include?(new_id)
-          dupe = new_id
-          break
-        else
-          ids << new_id
-        end
-      }
+      threads.each() { |thread| thread.join() } # wait here to sync all thread "job" work is done
       trys = ids.size
+      puts("Trys: (#{trys}) an id: [#{new_id}]") if (trys % 10_000) == 0
       break if trys >= Tests::MAX_NEW_ID_TRYS
     end
     puts("Test is over, took (#{(Time.now - start_time).round()}) seconds")
