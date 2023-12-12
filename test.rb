@@ -4,7 +4,7 @@
 require './src/internal/Configuration.rb'
 
 module Tests
-  MAX_NEW_ID_TRYS = 1_000_000
+  MAX_NEW_ID_TRYS = 1_000_000  # nil will run forever or untill it finds a match.
   #---------------------------------------------------------------------------------------------------------
   # Generate a bunch of new id's and check to see if any duplicates are found.
   def self.test_random_ids()
@@ -32,7 +32,10 @@ module Tests
       threads.each() { |thread| thread.join() } # wait here to sync all thread "job" work is done
       trys = ids.size
       puts("Trys: (#{trys}) an id: [#{new_id}]") if (trys % 10_000) == 0
-      break if trys >= Tests::MAX_NEW_ID_TRYS
+      if Tests::MAX_NEW_ID_TRYS
+        puts("To excape kill terminal task or exit crlt^c system equivlant.")
+        break if trys >= Tests::MAX_NEW_ID_TRYS
+      end
     end
     puts("Test is over, took (#{(Time.now - start_time).round()}) seconds")
     if dupe

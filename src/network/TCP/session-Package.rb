@@ -104,6 +104,7 @@ class TCPsession
       @latency_server = 0  # Time it took server to send the packaged message till recieving it.
       @latency_sender = 0  # Time from the originating sender packaging the message till recieving it.
       @error = false
+      @extended_mode = 0
       # If a byte string was provided, construct self from that string.
       unpack_byte_string(byte_string) unless byte_string.nil?
     end
@@ -155,9 +156,10 @@ class TCPsession
       return nil if @data_mode != DATAMODE::CLIENT_SYNC
       case @data
       when String
-        Logger.error("TCPSessionData::Package", "Client @data in package is still a String.",
+        Logger.warn("TCPSessionData::Package", "Client @data in package is still a String.",
           tags: [:Package]
         )
+        @extended_mode, unpacked_data = @data.unpack(Package::BYTE_CLIENTSYNC)
         return nil
       when Array
         unless @data.size == Package::CLIENTSYNC_LENGTH
@@ -186,7 +188,7 @@ class TCPsession
           ref_id, username = entry.unpack(Package::BYTE_CLIENT)
           [ref_id.delete("\00"), username.delete("\00")]
         }
-        @data = [@data_mode, unpacked_data]
+        @data = [@extended_mode, unpacked_data]
       end
       # {packtype:, client_data:}
       return @data
@@ -244,9 +246,9 @@ class TCPsession
       set_creation_time()
       @data_mode = DATAMODE::CLIENT_SYNC
       if data_array.nil?
-        packtype, pool_data = @data
+        @extended_mode, pool_data = @data
       else
-        packtype, pool_data = data_array
+        @extended_mode, pool_data = data_array
       end
       # package client data into an array of byte stings
       unless pool_data.is_a?(String)
@@ -259,7 +261,7 @@ class TCPsession
         "\nPackage: (#{packed_pool})",
         tags: [:Package]
       )
-      @data = [packtype, packed_pool].pack(Package::BYTE_CLIENTSYNC)
+      @data = [@extended_mode, packed_pool].pack(Package::BYTE_CLIENTSYNC)
       # after packaging the data Array, package the entire message for sending over network
       Logger.info("TCPSessionData::Package", "Building sync request for clients."+
         "\nData: (#{data_array.inspect})"+

@@ -50,12 +50,25 @@ class TCPclient
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # When the local client first makes contact with the server, the server will report back some information.
+  def server_pool_cannonball()
+    splash = @@client_session.await_data_msg()
+    report = splash.data.slice(ClientPool::REF_BYTE_SIZE)[0]
+    Logger.debug("TCPclient", "Server cannonball:(#{report.inspect})",
+      tags: [:Network, :Client]
+    )
+  end
+
+  #---------------------------------------------------------------------------------------------------------
   # This is a blocking function, it uses two threads to send/recieve data.
   def connect(parent_window = nil)
     if parent_window.nil?
       thread_sd = Thread.new { local_sendData() } 
     end
-    thread_rfs = Thread.new { receive_from_server(parent_window) }
+    thread_rfs = Thread.new { 
+      server_pool_cannonball()
+      receive_from_server(parent_window) 
+    }
     thread_sd.join() if parent_window.nil?
     thread_rfs.join() 
     shutdown() unless parent_window.nil?

@@ -64,7 +64,8 @@ class TCPserver
       description.set_name(requested_name)
     else
       Logger.error("TCPserver", "New client already exists in the pool, did not add Client again."+
-        "\nexisting: (#{description.inspect})",
+        "\nswimmers: (#{client_pool.count()})"+
+        "\nskipped cannonball: (#{client_session.inspect})",
         tags: [:Network, :Client]
       )
       return nil
@@ -75,7 +76,7 @@ class TCPserver
     )
     send_client_a_msg(client_session, "Hello #{description.username}! #{client_pool.count()} clients.")
     puts("Check name (#{client_session.inspect})")
-    send_clients_a_msg("#{description.username} joined! #{client_pool.count()} clients.", [description.username])
+    send_clients_a_msg("#{description.username} joined! #{client_pool.count()} clients.", [description.ref_id])
     # report that the user requested is unique
     return nil
   end
@@ -165,7 +166,7 @@ class TCPserver
       "\nPackage: (#{outgoing_data.inspect})",
       tags: [:Network, :Client]
     )
-    send_bytes_to_everyone(outgoing_data, [])
+    send_bytes_to_everyone(outgoing_data, [], true)
   end
   
   #---------------------------------------------------------------------------------------------------------
@@ -233,21 +234,35 @@ class TCPserver
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # How a new client session arives and is added into the server's pool to be synced later with client swimmers.
+  def handle_cannonball(client_socket)
+    client_session = TCPsession.new(client_socket)
+    Logger.info("TCPserver", "New client ref_id:(#{client_session.description.ref_id}) wants to swim in the pool."+
+      "\nSession: (#{client_session.inspect})"+
+      "\nsocket: (#{client_socket.inspect})",
+      tags: [:Network, :Client]
+    )
+    # syncronize the client's local session's Client ref_id with what the server reports them as being localy to it.
+    # this means the local ref_id the client generated will be thrown out, and a new ref_id for the Server's client pool
+    # Client objects will be syncronized to that clients socket. If the server recieves a message from a client whos
+    # ref_id isn't in the pool, it can check for that and many more kinds of things.
+    Logger.debug("TCPserver", "Reporting to client splash ref_id:(#{client_session.description.ref_id}).",
+      tags: [:Network, :Client]
+    )
+    send_client_a_msg(client_session, "#{client_session.description.ref_id}")
+    return client_session
+  end
+
+  #---------------------------------------------------------------------------------------------------------
   # This is a blocking function, it waits for a client to connect.
   def listen(parent_window = nil)
     @@parent_window = parent_window
     loop do
       begin
         break if @@tcpSocket.nil?
-        new_client = @@tcpSocket.accept()
-        new_session = TCPsession.new(new_client)
-        Logger.debug("TCPserver", "New client was added into the pool:"+
-          "\nSession: (#{new_session.inspect})"+
-          "\nsocket: (#{new_client.inspect})",
-          tags: [:Network]
-        )
+        new_client_socket = @@tcpSocket.accept()
         Thread.new {
-          session_thread_handle(new_session)
+          session_thread_handle(handle_cannonball(new_client_socket))
         }
       rescue => error
         case error

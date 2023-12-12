@@ -4,8 +4,6 @@
 class TCPsession
   attr_accessor :username
 
-  @@client_pool = nil
-  @@client_self = nil
   #--------------------------------------
   # Option to send raw byte strings instead of inflating by a factor of two and sending a hex string representation.
   # If you can manage to avoid end-line flags when packaging raw data then you can use raw strings. Otherwise its
@@ -26,51 +24,54 @@ class TCPsession
   def initialize(socket, username = "")
     @creation_time = Time.now.utc()
     @socket = socket
-    @@client_self = ClientPool::Client.new(username: username, session_pointer: self)
-    @@client_pool = ClientPool.new(self)
+    @client_self = ClientPool::Client.new(username: username, session_pointer: self)
+    # The first initialization will be local client, so that will be bound to the ClientPool to refrence local Client
+    # this means that the server will have many sessions with many pools with in them, but only the top pool is filled.
+    # on the other end, the client subscribed to the server session only has one pool.
+    @client_pool = ClientPool.new(self)
     request_sync_client()
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Check if provided user ref_id is the same one as the local session.
   def is_self?(this_user_id = nil)
-    return nil if @@client_self.nil?
-    return @@client_self.ref_id == this_user_id
+    return nil if @client_self.nil?
+    return @client_self.ref_id == this_user_id
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Get local self's public description shown between clients connected to the same server.
   def description()
-    return @@client_self
+    return @client_self
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Return all the currently known clients.
   def get_client_pool()
-    return @@client_pool
+    return @client_pool
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Request a change to @@client_self be synced by the server to other client sessions.
+  # Request a change to @client_self be synced by the server to other client sessions.
   def request_sync_client()
-    Logger.info("TCPsession", "Local client is requesting a change to its public description. (#{@@client_self.inspect})",
+    Logger.info("TCPsession", "Local client is requesting a change to its public description. (#{@client_self.inspect})",
       tags: [:Network, :Package, :Client]
     )
-    @@client_pool.sync_client(@@client_self)
+    @client_pool.sync_client(@client_self)
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Return a new Package object to load data into in preperation for sending over network session.
   def empty_data_package()
-    return nil if @@client_self.nil?
-    return Package.new(nil, @@client_self.ref_id)
+    return nil if @client_self.nil?
+    return Package.new(nil, @client_self.ref_id)
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Package send data array into a byte string depending on kown types.
   def package_data(data_to_send)
-    return nil if @@client_self.nil?
-    new_data_package = Package.new(nil, @@client_self.ref_id)
+    return nil if @client_self.nil?
+    new_data_package = Package.new(nil, @client_self.ref_id)
     case data_to_send
     when String
       character_count = data_to_send.length()

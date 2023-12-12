@@ -2,6 +2,8 @@
 # !!!   ClientPool.rb  |  Where all the clients get to swim together.
 #===============================================================================================================================
 class ClientPool
+  REF_BYTE_SIZE = 10 # Should match the generated ref_id length.
+  # Additional package flags for ariving data types.
   module DATAMODE
     ALL_CLIENTS = 0
   end
@@ -41,31 +43,34 @@ class ClientPool
   end
   #---------------------------------------------------------------------------------------------------------
   # Add a client to the pool, if it doesn't exist already create a new ClientPool::Client object.
-  def add_new(client)
-    Logger.debug("ClientPool", "Adding to the client pool, currently swimming:[#{@clients.size}]"+
-      "\nnew: (#{client.inspect})",
+  def add_new(client_session)
+    case client_session
+    when TCPsession
+      new_client = client_session.description
+    when ClientPool::Client
+      new_client = client_session
+    end
+    Logger.debug("ClientPool", "Attempting to add client with ref_id:(#{new_client.ref_id}) into the session pool."+
+      "\ncurrently swimming: [#{@clients.size}]"+
+      "\nnew session: (#{client_session.inspect})",
       tags: [:Network, :Client]
     )
-    case client
-    when TCPsession
-      new_client = client.description
-    when ClientPool::Client
-      new_client = client
-    end
-    # make sure the client doesn't already exist in the pool
+    # make sure the Client doesn't already exist in the pool
     if find_client(by: :ref_id, search_term: new_client.ref_id)
-      Logger.warn("ClientPool", "Attempting to add a client already in the pool."+
-        "\nclient: (#{client.inspect})",
+      Logger.warn("ClientPool", "Tried to add a Client already in the pool. ref_id:(#{new_client.ref_id})"+
+        "\nsession: (#{client_session.inspect})",
         tags: [:Client]
       )
     else
       @clients << new_client
       return new_client
     end
-    Logger.error("ClientPool", "Failed to add new client: (#{client.inspect})",
+    Logger.error("ClientPool", "Failed to add new Client into session pool."+
+      "\nref_id:(#{new_client.ref_id}) username:(#{new_client.username})"+
+      "\nclient: (#{client_session.inspect})",
       tags: [:Client]
     )
-    return false
+    return nil
   end
   #---------------------------------------------------------------------------------------------------------
   def each()
@@ -87,14 +92,16 @@ class ClientPool
     when :username
       located = @clients.select { |client| client.username == search_term }
     end
+    # proccess Array of any found matches
     return nil if located.nil?
     sml_string_list = located.map() { |client|
       [client.ref_id, client.username]
     }
-    Logger.info("ClientPool", "While searching found clients: [#{by}](#{search_term})"+
-      "\nlocated[#{sml_string_list.size}]: (#{sml_string_list.inspect()})",
+    Logger.info("ClientPool", "While searching found [#{sml_string_list.size}] clients for:[#{by}](#{search_term})"+
+      "\nlocated: (#{sml_string_list.inspect()})",
       tags: [:Client]
     )
+    # only return the first Client found if any had been found
     return located[0] if located.length > 0
     return nil
   end
