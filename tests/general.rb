@@ -1,10 +1,13 @@
+#!/usr/bin/env ruby
 #===============================================================================================================================
-# !!!  Tests.rb |  Run a few tests.
+# !!!  GeneralTests.rb |  Run a few tests.
+#-------------------------------------------------------------------------------------------------------------------------------
+# Sometimes just the random things.
 #===============================================================================================================================
 require './src/internal/Configuration.rb'
 
-module Tests
-  MAX_NEW_ID_TRYS = 1_000_000  # nil will run forever or untill it finds a match.
+module GeneralTests
+  MAX_NEW_ID_TRYS = 1_000_000  # 'nil' will run forever or untill it finds a match.
   #---------------------------------------------------------------------------------------------------------
   # Generate a bunch of new id's and check to see if any duplicates are found.
   def self.test_random_ids()
@@ -32,9 +35,9 @@ module Tests
       threads.each() { |thread| thread.join() } # wait here to sync all thread "job" work is done
       trys = ids.size
       puts("Trys: (#{trys}) an id: [#{new_id}]") if (trys % 10_000) == 0
-      if Tests::MAX_NEW_ID_TRYS
+      if GeneralTests::MAX_NEW_ID_TRYS
         puts("To excape kill terminal task or exit crlt^c system equivlant.")
-        break if trys >= Tests::MAX_NEW_ID_TRYS
+        break if trys >= GeneralTests::MAX_NEW_ID_TRYS
       end
     end
     puts("Test is over, took (#{(Time.now - start_time).round()}) seconds")
@@ -89,8 +92,8 @@ end
 
 puts("Running some tests:")
 
-Tests.test_time()
-Tests.test_hex_pacakge()
-Tests.test_random_ids()
+GeneralTests.test_time()
+GeneralTests.test_hex_pacakge()
+GeneralTests.test_random_ids()
 
 puts("Tests have finished.")

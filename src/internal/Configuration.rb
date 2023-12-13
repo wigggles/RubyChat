@@ -4,12 +4,6 @@
 # This is the first object to be loaded when launching the application. It contains common settings and methods.
 #
 # Due to the nature of external IPs it is typically required to touch a remote and obtain the result.
-# Below is a list of publically known 3rd party remote IP APIs.
-# http://whatismyip.akamai.com
-# http://ipecho.net/plain
-# http://icanhazip.com
-# http://ident.me
-# http://bot.whatismyipaddress.com
 #===============================================================================================================================
 require 'set'
 require 'open-uri'
@@ -19,8 +13,10 @@ Thread.report_on_exception = true # Threads report back fail
 #===============================================================================================================================
 module Configuration
   DEBUG = false # Display additional IP information.
-  ROOT_DIR = File.expand_path('.',__dir__)
+  ROOT_DIR = File.expand_path('../',__dir__)
   PORT = 2000
+
+  require "#{ROOT_DIR}/internal/Logger.rb" # Make things easier to debug and track with colors.
 
   #--------------------------------------
   # GUI mode settings:
@@ -41,11 +37,19 @@ module Configuration
   SCREEN_WIDTH, SCREEN_HEIGHT = ResolutionModes::DESK_MED
 
   #---------------------------------------------------------------------------------------------------------
-  # Get local subnet IP, (LAN)
+  # Below is a list of publically known 3rd party remote IP APIs.
+  REMOTE_IP_API = {
+    akamai:         "http://whatismyip.akamai.com",
+    ipecho:         "http://ipecho.net/plain",
+    icanhazip:      "http://icanhazip.com",
+    ident:          "http://ident.me",
+    whatsmyaddress: "http://bot.whatismyipaddress.com"
+  }
+  # Get local subnet IP, (LAN) and remote (Public) IP using 3rd party site API.
   def self.getSelfIP()
     begin
-      remote_ip = URI.open('http://whatismyip.akamai.com').read()
-      local_ip = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
+      local_ip  = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
+      remote_ip = URI.open(REMOTE_IP_API[:akamai]).read()
     rescue => error
       Logger.error("Configuration", "Could not resolve public/local IPs, 'No Internet'?"+
         "\n(#{error.inspect})",
