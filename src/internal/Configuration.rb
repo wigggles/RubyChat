@@ -61,8 +61,12 @@ module Configuration
 
   #---------------------------------------------------------------------------------------------------------
   # Attempt to generate new unique ids, uses a time based float. By defualt this id will be a String hex value.
-  # Depending on mode, returns a 4 byte integer or a long integer to form a readable string twice the length
+  # Depending on mode, returns an integer or a long long integer to form a readable string twice the length
   # displaying the byte values or a packed string value consisting of the bytes raw ansii characters.
+  # These IDs are then used to identify network elements for client data object's refrence. Due to this,
+  # its important to keep track with how many bytes are being packaged for object refrence and generate
+  # an ID matching the session-Package requirements. There is also a chance that the same value is drawn
+  # twice or more, you'll need to plan for such cases so ID's stay unique.
   def self.generate_new_ref_id(as_string: true, clamp: false, packed: false)
     # Generate a new id as a large 8 byte value which will be clamped down to 4 bytes
     # 42,949,672,950 is the maximum size of a 4 byte unsigned integer, this gets chomped later
@@ -70,23 +74,23 @@ module Configuration
       new_id = ((Time.now.to_f() * 10_000_000).round() % 42_949_672_950)
     else
       # a time value is usually 8 bytes as a long long unsigned integer.
-      # so do nothing to the new_id value, it will be less then 18,446,744,073,709,551,615
+      # so do nothing to the new_id value, it will be less then 18_446_744_073_709_551_615
       new_id = (Time.now.to_f() * 10_000_000).round()
-      # the upper bytes are not occupied in this century, so almost safe bet to drop the top bytes
-      # only using 6 bytes total for a little extra uniqueness to ids over using 4 bytes
+      # the upper bytes are not occupied in this century, so almost safe bet to drop a few.
+      # generates upto 6 bytes total for a little extra uniqueness to ids over using 4 bytes
     end 
-    # If using a semi human readable id that was generated, it needs to be at least 10 byte characters.
+    # If using a semi human readable id that was generated, it needs to be at least 10 characters.
     if as_string
+      # The ID is converted to base 16 hex, doubling its string length
       new_id = new_id.to_s(16)
-      if clamp # only grab 4 bytes
-        new_id = new_id[2...new_id.size]
-        #new_id = new_id.rjust(8, rand(0..10).to_s)
-      else # use 6 bytes, a bit more random for larger id pools
-        new_id = new_id[4...new_id.size]
-        #new_id = new_id.rjust(12, rand(0..10).to_s)
+      if clamp # only grab 4 bytes (8 characters), over time chances of a duplicate raise
+        new_id = new_id.slice(1...9)
+      else # use 5 bytes (10 characters), a bit more time based random for larger id pools
+        new_id = new_id.slice(4...new_id.size)
       end
       # optionally, convert the hex string from the integer id hex readable string into a raw byte string halfing
-      # its size, however this makes the id's not human readable unless they are unpacked later.
+      # its size, however this makes the id's not human readable unless they are unpacked later. This packaging
+      # requires that their be an even number of characters
       new_id = [new_id].pack('H*') if packed
     end
     return new_id

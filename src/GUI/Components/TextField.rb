@@ -3,7 +3,7 @@
 #===============================================================================================================================
 class GUI::TextField < GUI::Component
   BLINK_SPEED = 20
-  REPEAT_PRESS_TIMEOUT = 10
+  REPEAT_PRESS_TIMEOUT = 0
   MAX_LENGTH = 42 # 128
 
   attr_accessor :text, :font
@@ -61,9 +61,10 @@ class GUI::TextField < GUI::Component
     @press_repeat -= 1 if @press_repeat > 0
     @old_key_press = nil if @press_repeat <= 0
     # when accepting key inputs
-    if $controls.grab_characters != @old_key_press
+    current_input_character = $controls.get_text_input()
+    if current_input_character != @old_key_press
       @press_repeat = GUI::TextField::REPEAT_PRESS_TIMEOUT
-      @old_key_press = $controls.grab_characters
+      @old_key_press = current_input_character
       if @pulse[1]
         @text.chop! # remove last character
         @pulse = [BLINK_SPEED, false] # reset pulse active bar

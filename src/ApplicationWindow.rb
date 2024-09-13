@@ -40,7 +40,7 @@ class ApplicationWindow < Gosu::Window
     # create a new Gosu::Window
     super(Configuration::SCREEN_WIDTH, Configuration::SCREEN_HEIGHT, Configuration::FULLSCREEN)
     @@font = Gosu::Font.new(self, nil, 24)
-    @@controls = InputControls.new(self)
+    @@controls = InputControls.new()
     # create a new session socket manager
     @is_server = is_server
     # start up the GUI's initial state manager

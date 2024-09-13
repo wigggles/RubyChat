@@ -136,17 +136,17 @@ When using an ApplicationWindow you can take advantage of the InputControls boun
 are some examples of how to do it.
 
 ```ruby
-GUI.parent_window.controls.holding?(:move_up)
-GUI.parent_window.controls.holding?(:move_down)
-GUI.parent_window.controls.holding?(:shift)
+$controls.holding?(:move_up)
+$controls.holding?(:move_down)
+$controls.holding?(:shift)
 
-GUI.parent_window.controls.trigger?(:menu_action)
-GUI.parent_window.controls.trigger?(:menu_up)
-GUI.parent_window.controls.trigger?(:cancel_action)
-GUI.parent_window.controls.trigger?(:action_key)
+$controls.trigger?(:menu_action)
+$controls.trigger?(:menu_up)
+$controls.trigger?(:cancel_action)
+$controls.trigger?(:action_key)
 
-GUI.parent_window.controls.holding?(:mouse_lclick)
-GUI.parent_window.controls.trigger?(:mouse_lclick)
-GUI.parent_window.mouse_x.to_i()
-GUI.parent_window.mouse_y.to_i()
+$controls.holding?(:mouse_lclick)
+$controls.trigger?(:mouse_lclick)
+$application.mouse_x.to_i()
+$application.mouse_y.to_i()
 ```
