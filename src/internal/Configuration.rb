@@ -61,16 +61,31 @@ module Configuration
 
   #---------------------------------------------------------------------------------------------------------
   # Attempt to generate new unique ids, uses a time based float. By defualt this id will be a String hex value.
-  # Depending on mode, returns a 4 byte integer, a 10 byte readable string, or a 5 byte packed string value.
-  def self.generate_new_ref_id(as_string: true, packed: false)
+  # Depending on mode, returns a 4 byte integer or a long integer to form a readable string twice the length
+  # displaying the byte values or a packed string value consisting of the bytes raw ansii characters.
+  def self.generate_new_ref_id(as_string: true, clamp: false, packed: false)
     # Generate a new id as a large 8 byte value which will be clamped down to 4 bytes
-    # 42,949,672,950 is the maximum size of a 4 byte unsigned integer
-    new_id = ((Time.now.to_f() * 100_000_000).round() % 42_949_672_950)
+    # 42,949,672,950 is the maximum size of a 4 byte unsigned integer, this gets chomped later
+    if clamp
+      new_id = ((Time.now.to_f() * 10_000_000).round() % 42_949_672_950)
+    else
+      # a time value is usually 8 bytes as a long long unsigned integer.
+      # so do nothing to the new_id value, it will be less then 18,446,744,073,709,551,615
+      new_id = (Time.now.to_f() * 10_000_000).round()
+      # the upper bytes are not occupied in this century, so almost safe bet to drop the top bytes
+      # only using 6 bytes total for a little extra uniqueness to ids over using 4 bytes
+    end 
     # If using a semi human readable id that was generated, it needs to be at least 10 byte characters.
     if as_string
-      new_id = new_id.to_s(16).rjust(10, rand(0..10).to_s)
-      new_id = new_id[0..10]
-      # additionally, convert the hex string from the integer id hex readable string into a raw byte string halfing
+      new_id = new_id.to_s(16)
+      if clamp # only grab 4 bytes
+        new_id = new_id[2...new_id.size]
+        #new_id = new_id.rjust(8, rand(0..10).to_s)
+      else # use 6 bytes, a bit more random for larger id pools
+        new_id = new_id[4...new_id.size]
+        #new_id = new_id.rjust(12, rand(0..10).to_s)
+      end
+      # optionally, convert the hex string from the integer id hex readable string into a raw byte string halfing
       # its size, however this makes the id's not human readable unless they are unpacked later.
       new_id = [new_id].pack('H*') if packed
     end

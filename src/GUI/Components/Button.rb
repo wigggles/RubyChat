@@ -8,19 +8,18 @@ class GUI::Button < GUI::Component
   #---------------------------------------------------------------------------------------------------------
   #D: Creates the Kernel Class (klass) instance.
   def initialize(options = {})
-    @x = options[:x] || 0
-    @y = options[:y] || 0
+    super(options)
     @align = options[:align] || :left # How to position based off x and y location.
     # using the text with out passing :width can automatically set @width
     @text = options[:text] || ''
     font_size = options[:font_size] || 24
-    @font = Gosu::Font.new(GUI.parent_window, "verdana", font_size)
+    @font = Gosu::Font.new($application, "verdana", font_size)
     @box_edge_buf = font_size #DV Add a little to the box so not touching text on edges.
-    if @width.nil?
+    if @width <= 0
       @width  = options[:width]  || @font.text_width(@text).round()
       @width += (@box_edge_buf * 2)
     end
-    if @height.nil?
+    if @height <= 0
       @height = options[:height] || font_size * 2
     end
     # set working colors
@@ -31,14 +30,13 @@ class GUI::Button < GUI::Component
     @is_depresed = false
     @has_actioned = false
     # setup call method for action
-    @owner = options[:owner] || nil
     if @owner.nil?
       print("Error with Button no ower, skipping")
       return nil
     end
     @action = options[:action] || nil
     @action_timeout = GUI::Button::ACTION_TIMEOUT
-    super(options)
+    is_ready()
   end
   #---------------------------------------------------------------------------------------------------------
   #D Try first to catch errors, and call function from parent class user.
@@ -65,8 +63,8 @@ class GUI::Button < GUI::Component
   #---------------------------------------------------------------------------------------------------------
   #D: Check to see if the mouse is on-top of the button, then if it is, update sprite actions.
   def mouse_hover?()
-    mouse_x = GUI.parent_window.mouse_x.to_i
-    mouse_y = GUI.parent_window.mouse_y.to_i
+    mouse_x = $application.mouse_x.to_i
+    mouse_y = $application.mouse_y.to_i
     case @align
     when :right
       mouse_x += @width
@@ -83,7 +81,7 @@ class GUI::Button < GUI::Component
     @bgimg = GUI::BlobDraw.get_image({
       of: :round_rect, width: @width, height: @height, radius: 16, outlined: true
     }) if @bgimg.nil?
-    @bgimg.draw(screen_x, screen_y, 0, 1.0, 1.0, color)
+    @bgimg.draw(screen_x, screen_y, @z, 1.0, 1.0, color)
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Update loop for button behaviors.
@@ -97,17 +95,17 @@ class GUI::Button < GUI::Component
     mouse_hover?()
     if @has_actioned
       @is_highlighted = false
-      unless GUI.parent_window.controls.holding?(:mouse_lclick)
+      unless $controls.holding?(:mouse_lclick)
         @has_actioned = false
         @is_depresed = false
       end
     else
       if @is_highlighted
         if @is_depresed
-          unless GUI.parent_window.controls.holding?(:mouse_lclick)
+          unless $controls.holding?(:mouse_lclick)
             action()
           end
-        elsif GUI.parent_window.controls.trigger?(:mouse_lclick)
+        elsif $controls.trigger?(:mouse_lclick)
           @is_depresed = true 
         end
       else
@@ -134,7 +132,7 @@ class GUI::Button < GUI::Component
     # draw the text/contents of the Button
     screen_x += @box_edge_buf
     screen_y += (@box_edge_buf / 2)
-    @font.draw_text(@text, screen_x, screen_y, 0, 1, 1, 0xFF_ffffff)
+    @font.draw_text(@text, screen_x, screen_y, @z+1, 1, 1, 0xFF_ffffff)
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Called when the button is disposed and/or when the parent class is destroyed.

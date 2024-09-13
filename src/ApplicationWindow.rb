@@ -44,7 +44,7 @@ class ApplicationWindow < Gosu::Window
     # create a new session socket manager
     @is_server = is_server
     # start up the GUI's initial state manager
-    GUI.bind_window(self)
+    $application = self
     set_app_state(MainState.new(self))
     # delay the autostart of network services, this provides enough time for the GUI to be created
     Thread.new {
@@ -58,7 +58,7 @@ class ApplicationWindow < Gosu::Window
         start_client_service() if @@service_mode == :tcp_client
       end
       # allow Logger to write into the '@application_state' if that Object has a method for it
-      Logger.bind_application_window(self) 
+      Logger.bind_application_window(self)
     }
   end
 

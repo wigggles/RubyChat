@@ -5,26 +5,23 @@ class GUI::ConsoleBox < GUI::Component
   #---------------------------------------------------------------------------------------------------------
   #D: Create object Klass.
   def initialize(options = {})
-    @width  = options[:width]  || 0  #DV Width of the viewing Rect.
-    @height = options[:height] || 0  #DV Height of the viewing Rect.
-    @x = options[:x] || 0
-    @y = options[:y] || 0
+    super(options)
     @bgcolor = 0xFF_6c6c6c   #DV Background color used to fill viewing Rect.
     font_size = options[:font_size] || 18
-    @font = Gosu::Font.new(GUI.parent_window, "verdana", font_size)
+    @font = Gosu::Font.new($application, "verdana", font_size)
     max_char_width = @font.text_width("W").round() * 0.55
     @line_width = (@width / max_char_width).round() #DV Max characters in a line before wrapping.
     @viewable_text = []
     @prevous_text = ""
     @max_lines = @height / font_size # max number of lines to draw, prevents lines being draw off screen.
-    super(options)
+    is_ready()
   end
   #---------------------------------------------------------------------------------------------------------
   def draw_background(screen_x, screen_y, color)
     @bgimg = GUI::BlobDraw.get_image({
       of: :round_rect, width: @width, height: @height, radius: 8, outlined: true
     }) if @bgimg.nil?
-    @bgimg.draw(screen_x, screen_y, 0, 1.0, 1.0, color)
+    @bgimg.draw(screen_x, screen_y, @z, 1.0, 1.0, color)
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Push text for display in console window; I.E. System.write_console(string)
@@ -79,7 +76,7 @@ class GUI::ConsoleBox < GUI::Component
     x = @x + 8
     y = @y + @height - 32
     @viewable_text.each do |line|
-      @font.draw_text(line, x, y, 0, 1, 1, 0xFF_ffffff)
+      @font.draw_text(line, x, y, @z+1, 1, 1, 0xFF_ffffff)
       y -= @font.height
     end
   end

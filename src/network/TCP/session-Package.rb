@@ -14,7 +14,7 @@ class TCPsession
     # The above defines how to deal with the string stream of data.
     #
     #    q    | 8-byte integer  | local creation time edian.
-    #    Z10  | 10 char bytes   | originating client id.
+    #    Z10  | 10 char bytes   | originating client id. ClientPool::REF_ID_SIZE
     #    q    | 8-byte integer  | server touched time edian.
     #    n    | 2-byte signed   | mode integer.
     #    a*   | take whats left | an arbritray length 'message' as a byte string value.

@@ -10,12 +10,10 @@ class GUI::TextField < GUI::Component
   #---------------------------------------------------------------------------------------------------------
   #D: Creates the Kernel Class (klass) instance.
   def initialize(options = {})
-    @x = options[:x] || 0
-    @y = options[:y] || 0
+    super(options)
     @text = options[:text] || ''
     font_size = options[:font_size] || 24
-    @font   = Gosu::Font.new(GUI.parent_window, "verdana", font_size)
-    @width  = options[:width] || 0
+    @font   = Gosu::Font.new($application, "verdana", font_size)
     @height = options[:height] || font_size * 2
     @box_edge_buf = font_size / 2 #DV Add a little to the box so not touching text on edges.
     @is_active = true  #DV Allow the text field to be changed?
@@ -29,7 +27,7 @@ class GUI::TextField < GUI::Component
       return nil
     end
     @action = options[:action] || nil
-    super(options)
+    is_ready()
   end
   #---------------------------------------------------------------------------------------------------------
   #D Try first to catch errors, and call function from parent class user.
@@ -54,7 +52,7 @@ class GUI::TextField < GUI::Component
     @bgimg = GUI::BlobDraw.get_image({
       of: :round_rect, width: @width, height: @height, radius: 8, outlined: true
     }) if @bgimg.nil?
-    @bgimg.draw(screen_x, screen_y, 0, 1.0, 1.0, color)
+    @bgimg.draw(screen_x, screen_y, @z, 1.0, 1.0, color)
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Update loop for button behaviors.
@@ -63,9 +61,9 @@ class GUI::TextField < GUI::Component
     @press_repeat -= 1 if @press_repeat > 0
     @old_key_press = nil if @press_repeat <= 0
     # when accepting key inputs
-    if GUI.parent_window.controls.grab_characters != @old_key_press
+    if $controls.grab_characters != @old_key_press
       @press_repeat = GUI::TextField::REPEAT_PRESS_TIMEOUT
-      @old_key_press = GUI.parent_window.controls.grab_characters
+      @old_key_press = $controls.grab_characters
       if @pulse[1]
         @text.chop! # remove last character
         @pulse = [BLINK_SPEED, false] # reset pulse active bar
@@ -105,7 +103,7 @@ class GUI::TextField < GUI::Component
     return unless super()
     draw_background(@x, @y, @bgcolor)
     # show what has been typed already
-    @font.draw_text(@text, @x + @box_edge_buf, @y + @box_edge_buf, 0, 1, 1, 0xFF_ffffff)
+    @font.draw_text(@text, @x + @box_edge_buf, @y + @box_edge_buf, @z+1, 1, 1, 0xFF_ffffff)
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Called when the button is disposed and/or when the parent class is destroyed.
