@@ -14,38 +14,48 @@ module GeneralTests
     puts("Checking if able to reliably generate random ids.")
     trys = 0
     ids  = Set.new()
-    dupe = false
-    new_id = nil
     start_time = Time.now
-    while !dupe
+    running = true
+    dupes = 0
+    mutex = Mutex.new
+    while running
+      new_id = nil
       threads = []
       # Max number of threads running at the same time is limited to the system environment, this requests 10 "jobs"
       10.times() { |t|
-        thread = Thread.new { # each thread generates 10 new ids
-          1000.times() { |i| 
-            #new_id = Configuration.generate_new_ref_id(as_string: false)
-            new_id = Configuration.generate_new_ref_id(as_string: true)
-            #new_id = Configuration.generate_new_ref_id(as_string: true, packed: true).unpack('H*')[0]
-            dupe = new_id unless ids.add?(new_id)
-          }
-        }
+        thread = Thread.new do # each thread generates new ids
+          mutex.synchronize do
+            1000.times() { |i|
+              trys += 1
+              new_id = Configuration.generate_new_ref_id(as_string: true, clamp: false, micro: false, packed: false)
+              #new_id = Configuration.generate_new_ref_id(as_string: true, packed: true).unpack('H*')[0]
+              dupes += 1 unless ids.add?(new_id)
+            }
+            #running = false if dupes >= 10_000
+          end
+        end
         # collect the threads for joining together later
-        threads << thread
+        threads.push(thread)
       }
       threads.each() { |thread| thread.join() } # wait here to sync all thread "job" work is done
-      trys = ids.size
-      puts("Trys: (#{trys}) an id: [#{new_id}]") if (trys % 10_000) == 0
-      if GeneralTests::MAX_NEW_ID_TRYS
-        puts("To excape kill terminal task or exit crlt^c system equivlant.")
-        break if trys >= GeneralTests::MAX_NEW_ID_TRYS
-      end
+      #trys = ids.size
+      puts("Trys: (#{trys}) an id: [#{new_id}] Dupes: #{dupes}") if (trys % 10_000) == 0
+      break if trys >= GeneralTests::MAX_NEW_ID_TRYS
     end
-    puts("Test is over, took (#{(Time.now - start_time).round()}) seconds")
-    if dupe
-      puts("Found a dupe id generated in #{trys} trys for (#{dupe}).")
-    else
-      puts("Tried #{trys} times but did not find any duplicate ids.")
-    end
+    puts("Test is over. Tried #{trys} times, took (#{(Time.now - start_time).round()}) seconds.\n\t#{(dupes.to_f / trys.to_f * 100).round(4)}% duplicates.")
+  end
+  #---------------------------------------------------------------------------------------------------------
+  # Test a typical basic outline for a net work package string of byte data.
+  def self.test_hex_pacakge()
+    sample_package = "\xF6\x030y\x9By<\x00\x00\x00\x00\x00\x00\x00\x00Server shut down, goodbye 0 clients!"
+    puts("Test bytes string to hex string.")
+    #puts("(#{sample_package})") # can print raw bytes to terminal, leads to undesired results
+    puts("(#{sample_package.inspect})")
+    hex_string = sample_package.bytes.pack("c*").unpack("H*").first()
+    puts("(#{hex_string})")
+    hex_unpacked = [hex_string].pack('H*')
+    #puts("(#{hex_unpacked})") # can print raw bytes to terminal, leads to undesired results
+    puts("(#{hex_unpacked.inspect})")
   end
   #---------------------------------------------------------------------------------------------------------
   # Figure out what the best way of packaging a Time object is.
@@ -55,18 +65,7 @@ module GeneralTests
     test_packing_time(time_now)
   end
   #---------------------------------------------------------------------------------------------------------
-  def self.test_hex_pacakge()
-    sample_package = "\xF6\x030y\x9By<\x00\x00\x00\x00\x00\x00\x00\x00Server shut down, goodbye 0 clients!"
-    puts("Test bytes string to hex string.")
-    puts("(#{sample_package})")
-    puts("(#{sample_package.inspect})")
-    hex_string = sample_package.bytes.pack("c*").unpack("H*").first()
-    puts("(#{hex_string})")
-    hex_unpacked = [hex_string].pack('H*')
-    puts("(#{hex_unpacked})")
-    puts("(#{hex_unpacked.inspect})")
-  end
-  #---------------------------------------------------------------------------------------------------------
+  # Different ways of packaging a Date time. Testing shows 'g' 'f' 'e' take up the least amount of bytes.
   def self.test_packing_time(time_object)
     %w(d D f F e E g G q Q).each { |flag|
       puts("Using mode: (#{flag})")
