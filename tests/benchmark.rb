@@ -11,10 +11,11 @@
 #    quick_bench        - Run direct test, check function 'BenchTests.quick_test' for more information.
 #    arrayHash          - Test Array vs Hash storage calls and function for speed comparison.
 #    arraySpeed         - Check the speed of Array tables and function calling.
+#    inputSpeed         - Compare the speed of the various input checking styles.
 #    classCalls         - Test call method return time across a basic Module and Class.
-#    randomNumbers      - Check speed in returning a relyable random number.
+#    randomNumbers      - Check speed in returning a reliable random number.
 #    numericFunctions   - Compare the speed of Math equating.
-#    tcpNetwork         - Checkout the speeds for aspects of TCP socketing.
+#    TCP_NETWORK         - Checkout the speeds for aspects of TCP socketing.
 #
 #  The most current description and items in the Benchmark suite will always be found in the registry of * Magic Numbers *
 #
@@ -28,7 +29,9 @@
 require 'benchmark' # https://ruby-doc.org/stdlib-1.9.3/libdoc/benchmark/rdoc/Benchmark.html
 # https://blog.appsignal.com/2018/02/27/benchmarking-ruby-code.html
 #===============================================================================================================================
+require 'gosu'
 require '../src/internal/Configuration.rb'
+require '../src/internal/InputControls.rb'
 
 #==============================================================================================================================
 # Source classes used in the testing should be loaded/required here.
@@ -47,13 +50,13 @@ require './benches/branches.rb'
 
 class BenchTests
   #---------------------------------------------------------------------------------------------------------
-  #D: Generally blank but an avalaible spot for benchmarking code snipts quickly. 
+  #D: Generally blank but an available spot for benchmarking code snipets quickly. 
   #---------------------------------------------------------------------------------------------------------
   def quick_bench()
     BenchTests.display_header("Quick Bench")
     #-----------------------------
     # This is a rough layout for a bench mark test, 
-    # feel free to copy the formating.
+    # feel free to copy the formatting.
     h = 'Quick Bench'; runfor = 1000
     temp = 0
     # reports times as string "user system total ( real)\n"
@@ -94,11 +97,12 @@ class BenchTests
   def run(group)
     case group
     when BT::HASH_VS_ARRAY::Group_Name then test_arrayhash_speed()
-    when BT::RND_NUMBER::Group_Name    then test_arrayspeeds()
-    when BT::ARRAY_SPEED::Group_Name   then test_classcalls()
-    when BT::CALL_METHOD::Group_Name   then test_random_numbergen()
-    when BT::NUMERIC::Group_Name       then test_numericfunctions()
-    when BT::TCPNETWORK::Group_Name    then test_TCPnetwork()
+    when BT::RND_NUMBER::Group_Name    then test_array_speeds()
+    when BT::ARRAY_SPEED::Group_Name   then test_class_calls()
+    when BT::INPUT_SPEED::Group_Name   then test_input_speeds()
+    when BT::CALL_METHOD::Group_Name   then test_random_number_gen()
+    when BT::NUMERIC::Group_Name       then test_numeric_functions()
+    when BT::TCP_NETWORK::Group_Name    then test_TCP_NETWORK()
     when 'quick_bench' then quick_bench()
     else
       puts "There is not Benchtest group by that tag identifier: #{group}"
@@ -109,11 +113,12 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   def run_all()
     test_arrayhash_speed()
-    test_arrayspeeds()
-    test_classcalls()
-    test_random_numbergen()
-    test_numericfunctions()
-    test_TCPnetwork()
+    test_array_speeds()
+    test_class_calls()
+    test_input_speeds()
+    test_random_number_gen()
+    test_numeric_functions()
+    test_TCP_NETWORK()
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Resets for fresh content.
@@ -134,7 +139,7 @@ class BenchTests
     #string = Random.new.bytes(10) # random string
   end
   #---------------------------------------------------------------------------------------------------------
-  #D: Draw column defninition header over string information table display.
+  #D: Draw column definition header over string information table display.
   #---------------------------------------------------------------------------------------------------------
   def self.display_header(h = '')
     BenchTests.showText("------------------------------------------------------------------\n")
@@ -191,7 +196,7 @@ when "--run"
   puts "Running Benchmark for: #{RUN_TEST}."
 else
   RUN_TEST = nil
-  puts "Running Defualt mode. #{ARGV}"
+  puts "Running Default mode. #{ARGV}"
 end
 # decide what the user is asking and hand it off to the Class.
 if RUN_TEST

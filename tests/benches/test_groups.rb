@@ -1,5 +1,5 @@
 #===============================================================================================================================
-# !!! BenchTests.rb   | Contains the test groups accociated with the test groups.
+# !!! BenchTests.rb   | Contains the test groups associated with the test groups.
 #-------------------------------------------------------------------------------------------------------------------------------
 # The variable @test_length is for progress tracking to report group jobs finished.
 #===============================================================================================================================
@@ -30,7 +30,7 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   #D: Check the results of random out comes. Sometimes patterns appear and results in same number out come.
   #---------------------------------------------------------------------------------------------------------
-  def test_random_numbergen
+  def test_random_number_gen
     prep_new_test("RND Numbers")
     @test_length = 5
     @array = []
@@ -44,11 +44,11 @@ class BenchTests
     return true # if called using GUI.action() call_back
   end
   #---------------------------------------------------------------------------------------------------------
-  #D: Get a benchmark of general Array usage cases for array syntax job performance compairs.
+  #D: Get a benchmark of general Array usage cases for array syntax job performance compares.
   #---------------------------------------------------------------------------------------------------------
-  def test_arrayspeeds
+  def test_array_speeds
     prep_new_test("Array Speed")
-    @test_length = 7
+    @test_length = 10
     @array = []
     BenchTests.showText(run_bench(BT::ARRAY_SPEED::LEVEL1_write, 10_000))
     BenchTests.showText(run_bench(BT::ARRAY_SPEED::LEVEL1_read,  10_000))
@@ -65,9 +65,27 @@ class BenchTests
     return true # if called using GUI.action() call_back
   end
   #---------------------------------------------------------------------------------------------------------
+  #D: Get a benchmark of different input checking style performances.
+  #---------------------------------------------------------------------------------------------------------
+  def test_input_speeds
+    prep_new_test("Input Speed")
+    @test_length = 7
+    @array = []
+    BenchTests.showText(run_bench(BT::INPUT_SPEED::UPDATE_LOOP,      10_000))
+    BenchTests.showText(run_bench(BT::INPUT_SPEED::TRIGGER,          10_000))
+    BenchTests.showText(run_bench(BT::INPUT_SPEED::HOLDING,          10_000))
+    BenchTests.showText(run_bench(BT::INPUT_SPEED::SCHEME_TRIGGER,   10_000))
+    BenchTests.showText(run_bench(BT::INPUT_SPEED::SCHEME_HOLD,      10_000))
+    BenchTests.showText(run_bench(BT::INPUT_SPEED::GOSU_BUTTON_DOWN, 10_000))
+    BenchTests.showText(run_bench(BT::INPUT_SPEED::HYBRID_MOVE,      10_000))
+    @array = []
+    BenchTests.display_footer()
+    return true # if called using GUI.action() call_back
+  end
+  #---------------------------------------------------------------------------------------------------------
   #D: Benches call method pointers for speed comparisons.
   #---------------------------------------------------------------------------------------------------------
-  def test_classcalls
+  def test_class_calls
     prep_new_test("Class Calls")
     @test_length = 13
     BenchTests.showText("  Math:\n")
@@ -84,7 +102,7 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   #D: Run Benchmarks for Numeric functions for speed comparisons.
   #---------------------------------------------------------------------------------------------------------
-  def test_numericfunctions
+  def test_numeric_functions
     prep_new_test("Numeric Operations")
     @test_length = 3
     BenchTests.showText("  Range Clamping:\n")
@@ -97,16 +115,16 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   #D: Run Benchmarks for TCP network sockets for speed comparisons.
   #---------------------------------------------------------------------------------------------------------
-  def test_TCPnetwork
+  def test_TCP_NETWORK
     prep_new_test("TCP network Operations")
     @test_length = 2
     BenchTests.showText("  Package byte String data:\n")
-    BenchTests.showText(run_bench(BT::TCPNETWORK::REF_ID_integer,        500_000))
-    BenchTests.showText(run_bench(BT::TCPNETWORK::REF_ID_string,         500_000))
-    BenchTests.showText(run_bench(BT::TCPNETWORK::REF_ID_packed,         500_000))
-    BenchTests.showText(run_bench(BT::TCPNETWORK::PACKAGE_new,         1_000_000))
-    BenchTests.showText(run_bench(BT::TCPNETWORK::PACK_string_bytes,     100_000))
-    BenchTests.showText(run_bench(BT::TCPNETWORK::UNPACK_bytes_string,   100_000))
+    BenchTests.showText(run_bench(BT::TCP_NETWORK::REF_ID_integer,        500_000))
+    BenchTests.showText(run_bench(BT::TCP_NETWORK::REF_ID_string,         500_000))
+    BenchTests.showText(run_bench(BT::TCP_NETWORK::REF_ID_packed,         500_000))
+    BenchTests.showText(run_bench(BT::TCP_NETWORK::PACKAGE_new,         1_000_000))
+    BenchTests.showText(run_bench(BT::TCP_NETWORK::PACK_string_bytes,     100_000))
+    BenchTests.showText(run_bench(BT::TCP_NETWORK::UNPACK_bytes_string,   100_000))
     BenchTests.display_footer()
     return true # if called using GUI.action() call_back
   end

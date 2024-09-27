@@ -23,7 +23,7 @@ class TCPsession
     CLIENTSYNC_LENGTH = 2
     BYTE_CLIENT = "Z10 Z20"
     CLIENT_BYTES = 30
-    # After using the BYTE_STRING to define common data, perform additonal proccessing.
+    # After using the BYTE_STRING to define common data, perform additonal processing.
     #
     #    n    | 2-byte signed   | type integer.
     #    a*   | take whats left | typically a list of clients.
@@ -33,7 +33,7 @@ class TCPsession
     #--------------------------------------
     BYTE_OBJECT = "Z10 L L n a*"
     OBJECT_LENGTH = 5
-    # After using the BYTE_STRING to define common data, perform additonal proccessing.
+    # After using the BYTE_STRING to define common data, perform additonal processing.
     #
     #    Z10  | 10 char bytes   | object refrence ID.
     #    L    | 4-byte unsigned | object X world position.
@@ -43,7 +43,7 @@ class TCPsession
     #--------------------------------------
     BYTE_MAPSYNC = "n a*"
     MAPSYNC_LENGTH = 2
-    # After using the BYTE_STRING to define common data, perform additonal proccessing.
+    # After using the BYTE_STRING to define common data, perform additonal processing.
     #
     #    n    | 2-byte signed   | type integer.
     #    a*   | take whats left | an arbritray length byte string.
@@ -52,7 +52,7 @@ class TCPsession
     module DATAMODE
       STRING      = 0    # This mode is the basic one, it just uses the string as a string.
       CLIENT_SYNC = 1    # This mode is when client data is being syncronized.
-      OBJECT      = 2    # This mode performs additional variable proccessing for generic data.
+      OBJECT      = 2    # This mode performs additional variable processing for generic data.
       MAP_SYNC    = 3    # This mode is data from the server that is related to a GameWorld.
     end
     #--------------------------------------
@@ -84,7 +84,7 @@ class TCPsession
         return true
       end
       # @data_mode is of an unknown type
-      Logger.error("TCPSessionData::Package", "Is using an unkown data type. (#{@data_mode.inspect})",
+      Logger.error("TCPSessionData::Package", "Is using an Unknown data type. (#{@data_mode.inspect})",
         tags: [:Package]
       )
       return false
@@ -100,7 +100,7 @@ class TCPsession
     # Create a new Package object to handle byte strings as a class to make interactions more enjoyable.
     def initialize(byte_string = nil, ref_id = nil)
       @ref_id = ref_id || ""
-      @arrival_time = nil  # On moment of 'calculate_latency' when package is recieved. 
+      @arrival_time = nil  # On moment of 'calculate_latency' when package is received. 
       @latency_server = 0  # Time it took server to send the packaged message till recieving it.
       @latency_sender = 0  # Time from the originating sender packaging the message till recieving it.
       @error = false
@@ -122,9 +122,9 @@ class TCPsession
     end
     #--------------------------------------
     # Calculate ms latency of the packet based off the server. This is done by following 3 time stamps.
-    # When a package is created, its stamped locally (client or server). When the server recieves a message,
+    # When a package is created, its stamped locally (client or server). When the server receives a message,
     # it will 'set_server_time' on the package before sending the data to the active clients. Finally, when
-    # the message is recieved by the client, this method 'calculate_latency' is called which sets arival time stamp.
+    # the message is received by the client, this method 'calculate_latency' is called which sets arival time stamp.
     # The latency of the network packet package and its handeling along the way is calculated in miliseconds.
     def calculate_latency()
       return nil unless Package::CALCULATE_LATENCY
@@ -170,7 +170,7 @@ class TCPsession
         end
         unpacked_data = @data[1]
         Logger.debug("TCPSessionData::Package", 
-          "Recieved DATAMODE::CLIENT_SYNC package. decoding it. Mode: (#{@data[0]})"+
+          "received DATAMODE::CLIENT_SYNC package. decoding it. Mode: (#{@data[0]})"+
           "\nRaw: (#{@data[1].inspect})"+
           "\nData: (#{unpacked_data.inspect})",
           tags: [:Package]  
@@ -308,29 +308,29 @@ class TCPsession
       when DATAMODE::STRING
         return pack_dt_string() if for_data.nil?
         return pack_dt_string(for_data) if for_data.is_a?(String)
-        Logger.error("TCPSessionData::Package", "In STRING mode but did not recieve a String. (#{for_data.inspect})",
+        Logger.error("TCPSessionData::Package", "In STRING mode but did not receive a String. (#{for_data.inspect})",
           tags: [:Package]
         )
       when DATAMODE::CLIENT_SYNC
         return pack_dt_client() if for_data.nil?
         return pack_dt_client(for_data) if for_data.is_a?(Array)
-        Logger.error("TCPSessionData::Package", "In CLIENT_SYNC mode but did not recieve an Array. (#{for_data.inspect})",
+        Logger.error("TCPSessionData::Package", "In CLIENT_SYNC mode but did not receive an Array. (#{for_data.inspect})",
           tags: [:Package]
         )
       when DATAMODE::OBJECT
         return pack_dt_object() if for_data.nil?
         return pack_dt_object(for_data) if for_data.is_a?(Array)
-        Logger.error("TCPSessionData::Package", "In OBJECT mode but did not recieve an Array. (#{for_data.inspect})",
+        Logger.error("TCPSessionData::Package", "In OBJECT mode but did not receive an Array. (#{for_data.inspect})",
           tags: [:Package]
         )
       when DATAMODE::MAP_SYNC
         return pack_dt_mapSync() if for_data.nil?
         return pack_dt_mapSync(for_data) if for_data.is_a?(Array)
-        Logger.error("TCPSessionData::Package", "In MAP_SYNC mode but did not recieve an Array. (#{for_data.inspect})",
+        Logger.error("TCPSessionData::Package", "In MAP_SYNC mode but did not receive an Array. (#{for_data.inspect})",
           tags: [:Package]
         )
       else # data mode is not defined
-        Logger.warn("TCPSessionData::Package", "In an unkown data mode. #{@data_mode.class}",
+        Logger.warn("TCPSessionData::Package", "In an Unknown data mode. #{@data_mode.class}",
           tags: [:Package]
         )
         return nil
@@ -348,7 +348,7 @@ class TCPsession
         sv_time = (data_array[2] / 10000000.0)
         @srvr_time_stmp   = Time.at(sv_time)            # time when server touched package
         @data_mode        = data_array[3].to_i          # extra data packaging mode defined
-        @data             = data_array[4].chomp().to_s  # extra/rest of string byte data recieved
+        @data             = data_array[4].chomp().to_s  # extra/rest of string byte data received
       rescue => error
         Logger.error("TCPSessionData::Package", "Issue during unpacking byte string:"+
           "\nRaw: (#{byte_string.inspect})"+
@@ -359,7 +359,7 @@ class TCPsession
         @error = true
         return nil
       end
-      # perform and additional proccessing to the data byte string if needed
+      # perform and additional processing to the data byte string if needed
       Logger.info("TCPSessionData::Package", "Unpacking DATAMODE:(#{@data_mode})"+
         "\nRaw (#{byte_string.inspect})"+
         "\nUnpacked Array (#{data_array.inspect})"+
@@ -394,7 +394,7 @@ class TCPsession
         end
         @data = expand_map_data()
       else
-        Logger.error("TCPSessionData::Package", "In an unkown DATAMODE (#{@data_mode})",
+        Logger.error("TCPSessionData::Package", "In an Unknown DATAMODE (#{@data_mode})",
           tags: [:Package]
         )
         return nil

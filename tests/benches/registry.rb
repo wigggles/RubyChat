@@ -3,7 +3,7 @@
 #===============================================================================================================================
 class BenchTests
   #---------------------------------------------------------------------------------------------------------
-  # Ranges defined above for method/function sorting should match indexs to ranges bellow. * Magic Numbers *
+  # Ranges defined above for method/function sorting should match indexes to ranges bellow. * Magic Numbers *
   #---------------------------------------------------------------------------------------------------------
   module BT
     #--------------------------------------
@@ -41,6 +41,17 @@ class BenchTests
     ARRAY_SPEED::LOOP_INDEX          = 49
     ARRAY_SPEED::LOOP_EACH           = 50
     #--------------------------------------
+    module INPUT_SPEED; end
+    INPUT_SPEED::Group_Name = 'inputSpeed'
+    INPUT_SPEED::TR   = Range.new( 60, 79)
+    INPUT_SPEED::UPDATE_LOOP      = 61
+    INPUT_SPEED::TRIGGER          = 62
+    INPUT_SPEED::HOLDING          = 63
+    INPUT_SPEED::SCHEME_TRIGGER   = 64
+    INPUT_SPEED::SCHEME_HOLD      = 65
+    INPUT_SPEED::GOSU_BUTTON_DOWN = 66
+    INPUT_SPEED::HYBRID_MOVE      = 67
+    #--------------------------------------
     module CALL_METHOD; end
     CALL_METHOD::Group_Name = 'randomNumbers'
     CALL_METHOD::TR    = Range.new(100, 119)
@@ -58,31 +69,32 @@ class BenchTests
     NUMERIC::RANGE_CLAMP_ternary     = 122
     NUMERIC::RANGE_CLAMP_Ruby_clamp  = 123
     #--------------------------------------
-    module TCPNETWORK; end
-    TCPNETWORK::Group_Name = 'tcpNetwork'
-    TCPNETWORK::TR     = Range.new(200, 229)
-    TCPNETWORK::REF_ID_integer       = 201
-    TCPNETWORK::REF_ID_string        = 202
-    TCPNETWORK::REF_ID_packed        = 203
-    TCPNETWORK::PACKAGE_new          = 211
-    TCPNETWORK::PACK_string_bytes    = 212
-    TCPNETWORK::UNPACK_bytes_string  = 213
+    module TCP_NETWORK; end
+    TCP_NETWORK::Group_Name = 'TCP_NETWORK'
+    TCP_NETWORK::TR     = Range.new(200, 229)
+    TCP_NETWORK::REF_ID_integer       = 201
+    TCP_NETWORK::REF_ID_string        = 202
+    TCP_NETWORK::REF_ID_packed        = 203
+    TCP_NETWORK::PACKAGE_new          = 211
+    TCP_NETWORK::PACK_string_bytes    = 212
+    TCP_NETWORK::UNPACK_bytes_string  = 213
     #--------------------------------------
   end
   #---------------------------------------------------------------------------------------------------------
-  #D: Called to a registry of bench mark runs ready to test. Dispaches the run group and current index ID.
-  #D: This is done to allow if required a Gosu.tick intermitent call if a group of bench marks takes a long time.
+  #D: Called to a registry of bench mark runs ready to test. Dispatches the run group and current index ID.
+  #D: This is done to allow if required a Gosu.tick intermittent call if a group of bench marks takes a long time.
   #D: Providing a prevention outlet to 'hang' issues for long benches with results wished to be shown in GUI.
   #---------------------------------------------------------------------------------------------------------
   def run_bench(index, runfor = 0)
     @test_index += 1 # if keeping track..
     case index
     when BT::HASH_VS_ARRAY::TR then return benches_hasharray(index, runfor)
-    when BT::RND_NUMBER::TR    then return benches_randomnumber(index, runfor)
+    when BT::RND_NUMBER::TR    then return benches_random_number(index, runfor)
     when BT::ARRAY_SPEED::TR   then return benches_array(index, runfor)
-    when BT::CALL_METHOD::TR   then return benches_callmethod(index, runfor)
+    when BT::INPUT_SPEED::TR   then return benches_input_speeds(index, runfor)
+    when BT::CALL_METHOD::TR   then return benches_call_method(index, runfor)
     when BT::NUMERIC::TR       then return benches_numeric(index, runfor)
-    when BT::TCPNETWORK::TR    then return benches_tcpNetwork(index, runfor)
+    when BT::TCP_NETWORK::TR    then return benches_TCP_NETWORK(index, runfor)
     else
       s = "Unknown bench mark run for index(#{index})\n"
     end

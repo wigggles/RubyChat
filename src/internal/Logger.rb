@@ -74,7 +74,7 @@ module Logger
     Client:   true
   }
   #--------------------------------------
-  # If sharing string with a GUI object, ber sure that it bound for method calling required to recieve arguments.
+  # If sharing string with a GUI object, ber sure that it bound for method calling required to receive arguments.
   @@bound_ApplicationWindow = nil
   @@paused = false
   #---------------------------------------------------------------------------------------------------------
@@ -175,7 +175,7 @@ module Logger
   end
   #---------------------------------------------------------------------------------------------------------
   # If utilizing an ApplicationWindow in a GUI mode, these messages can also be logged to a GUI Component
-  # given there is an active state that will proccess recieving these logging messages.
+  # given there is an active state that will process recieving these logging messages.
   def self.bind_application_window(parent_window)
     case parent_window
     when ApplicationWindow
@@ -185,7 +185,7 @@ module Logger
       @@bound_ApplicationWindow = parent_window
       return true
     end
-    # The request to bind passed 'parent_window' was of an object type unkown
+    # The request to bind passed 'parent_window' was of an object type Unknown
     return false
   end
   #---------------------------------------------------------------------------------------------------------

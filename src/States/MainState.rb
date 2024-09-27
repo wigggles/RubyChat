@@ -4,13 +4,11 @@
 class MainState
   PACKAGE_MESSAGE_STRING = true  # Package outgoing message string in this class, else have SessionData handle it.
 
-  @@parent_window = nil
   @@game_world = nil
 
   #---------------------------------------------------------------------------------------------------------
   # Create klass object.
-  def initialize(parent_window)
-    @@parent_window = parent_window
+  def initialize()
     # create a text viewing window
     options = {
       :width => Configuration::SCREEN_WIDTH / 8 * 3,
@@ -32,11 +30,11 @@ class MainState
       GUI::Button.new({
         text: "Spam 5",
         owner: self, action: :button_action,
-        x: @@parent_window.width - 4, y: 4, align: :right
+        x: $application.width - 4, y: 4, align: :right
       }),
       GUI::CheckBox.new({
         owner: self, action: :checkbox_action, radius: 12,
-        x: @@parent_window.width - 148, y: 28, align: :center
+        x: $application.width - 148, y: 28, align: :center
       })
     ]
     # set the default game world
@@ -56,7 +54,7 @@ class MainState
   #---------------------------------------------------------------------------------------------------------
   # Attempt to get a new package Object from any active sessions so new data can be loaded into it.
   def get_new_network_package()
-    data_package = @@parent_window.getNew_session_package()
+    data_package = $application.getNew_session_package()
     if data_package.nil?
       # can also just assume that this client session is not connected to a server if nil
       Logger.warn("MainState", "TextField could not create a new session package for sending data.",
@@ -84,7 +82,7 @@ class MainState
       tags: [:GUI, :State]
     )
     5.times { |time|
-      @@parent_window.send_socket_data(data_package)
+      $application.send_socket_data(data_package)
     }
     return true
   end
@@ -99,25 +97,25 @@ class MainState
       Logger.info("MainState", "TextField to send String session data package. (#{data_package.inspect})",
         tags: [:GUI, :State]
       )
-      @@parent_window.send_socket_data(data_package)
+      $application.send_socket_data(data_package)
     else
       Logger.info("MainState", "TextField sending String as socket data. (#{string.inspect})",
         tags: [:GUI, :State]
       )
-      @@parent_window.send_socket_data(string)
+      $application.send_socket_data(string)
     end
     return true
   end
   #---------------------------------------------------------------------------------------------------------
   # If network service is working with a TCPsession::Package handle how the incoming data is used.
-  def proccess_incoming_session_dataPackage(package)
+  def process_incoming_session_dataPackage(package)
     # if the package does not have a user name, assume it originated from self. TODO: A better method here.
     own_package = true
     unless package.ref_id.nil?
-      own_package = @@parent_window.current_session.is_self?(package.ref_id)
+      own_package = $application.current_session.is_self?(package.ref_id)
     end
     status_string = ""
-    Logger.debug("MainState", "Recieved a new network_package in DATAMODE:(#{package.data_mode}).",
+    Logger.debug("MainState", "received a new network_package in DATAMODE:(#{package.data_mode}).",
       tags: [:State]
     )
     Logger.info("MainState", "Processing network_package\nPackage:(#{package.inspect}).",
@@ -129,7 +127,7 @@ class MainState
       if own_package
         status_string = "(me)> #{package.data}"
       else
-        client_description = @@parent_window.get_clients.find_client(search_term: package.ref_id)
+        client_description = $application.get_clients.find_client(search_term: package.ref_id)
         if client_description
           status_string = "(#{client_description.username})> #{package.data}"
         else
@@ -137,8 +135,8 @@ class MainState
         end
       end
     when TCPsession::Package::DATAMODE::CLIENT_SYNC
-      unless @@parent_window.is_server?()
-        client_pool = @@parent_window.get_clients()
+      unless $application.is_server?()
+        client_pool = $application.get_clients()
         client_pool.sync_requested(package)
       else
         Logger.debug("MainState", "Server is syncing the client pool.",
@@ -149,7 +147,7 @@ class MainState
       if @@game_world.is_a?(GameWorld)
         @@game_world.world_object_sync(package.object_data())
       else
-        Logger.error("MainState", "Recieved an object data package but doesn't have an active GameWorld.",
+        Logger.error("MainState", "received an object data package but doesn't have an active GameWorld.",
           tags: [:State]
         )
       end
@@ -157,45 +155,45 @@ class MainState
       if @@game_world.is_a?(GameWorld)
         @@game_world.world_sync(package.mapsync_data())
       else
-        Logger.error("MainState", "Recieved a map sync data package but doesn't have an active GameWorld.",
+        Logger.error("MainState", "received a map sync data package but doesn't have an active GameWorld.",
           tags: [:State]
         )
       end
     else
-      Logger.error("MainState", "Recieved a data package set in a mode it doesn't know. (#{package.inspect})")
+      Logger.error("MainState", "received a data package set in a mode it doesn't know. (#{package.inspect})")
       status_string = "!Malformed Data Package!"
     end
     # return status
     return status_string
   end
   #---------------------------------------------------------------------------------------------------------
-  # Network session has recieved data, proccess it.
-  def recieve_network_data(package)
-    return if @@parent_window.nil?
+  # Network session has received data, process it.
+  def receive_network_data(package)
+    return if $application.nil?
     display_string = ""
     case package
     when TCPsession::Package
-      return if @@parent_window.current_session.nil?
+      return if $application.current_session.nil?
       case package.data_mode
       when TCPsession::Package::DATAMODE::STRING
-        display_string = proccess_incoming_session_dataPackage(package)
-        Logger.debug("MainState", "Recieved string package, displaying message. (#{display_string.inspect})",
+        display_string = process_incoming_session_dataPackage(package)
+        Logger.debug("MainState", "received string package, displaying message. (#{display_string.inspect})",
           tags: [:State]
         )
       when TCPsession::Package::DATAMODE::CLIENT_SYNC
-        Logger.debug("MainState", "Recieved client package, syncing with it.",
+        Logger.debug("MainState", "received client package, syncing with it.",
           tags: [:State]
         )
-        proccess_incoming_session_dataPackage(package)
+        process_incoming_session_dataPackage(package)
       else
-        # do nothing with the package that was recieved
-        Logger.info("MainState", "Recieved network packaged data (#{package.inspect})",
+        # do nothing with the package that was received
+        Logger.info("MainState", "received network packaged data (#{package.inspect})",
           tags: [:State]
         )
       end
     when String
       display_string = package
-      Logger.info("MainState", "Recieved network raw string data (#{package.inspect})",
+      Logger.info("MainState", "received network raw string data (#{package.inspect})",
         tags: [:State]
       )
     else
@@ -222,7 +220,7 @@ class MainState
   #---------------------------------------------------------------------------------------------------------
   # Draw to screen.
   def draw
-    return if @@parent_window.nil?
+    return if $application.nil?
     @@game_world.draw() unless @@game_world.nil?
     # after drawing the world and its WorldObjects, draw the UI over top of it
     draw_local_description()
@@ -234,12 +232,12 @@ class MainState
   end
   #---------------------------------------------------------------------------------------------------------
   def draw_local_description()
-    unless @@parent_window.self_client_description.nil?
-      username = @@parent_window.self_client_description.username
+    unless $application.self_client_description.nil?
+      username = $application.self_client_description.username
     else
       username = "'nil'"
     end
-    @@parent_window.font.draw_text("#{username}", 128, 4, 0, 1, 1, 0xFF_ffffff)
+    $application.font.draw_text("#{username}", 128, 4, 0, 1, 1, 0xFF_ffffff)
   end
   #---------------------------------------------------------------------------------------------------------
   # Called when the menu is shut, it releases things back to GC.

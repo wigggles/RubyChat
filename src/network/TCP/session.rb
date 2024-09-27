@@ -8,7 +8,7 @@ class TCPsession
   # Option to send raw byte strings instead of inflating by a factor of two and sending a hex string representation.
   # If you can manage to avoid end-line flags when packaging raw data then you can use raw strings. Otherwise its
   # recomended you instead send a string of characters to represent these bytes which later can be turned back into
-  # a byte string where ever the network message is recieved. This means instead of a message of 1024 bytes, you 
+  # a byte string where ever the network message is received. This means instead of a message of 1024 bytes, you 
   # can send a message of 512 bytes for a maximum payload size.
   USE_RAW_STRING_PACKAGE = false  # ** Default is 'false'.
   #--------------------------------------
@@ -96,7 +96,7 @@ class TCPsession
   def unpackage_data(received_data)
     case received_data
     when TCPsession::Package
-      Logger.info("TCPsession", "Recieved an already packaged data byte string.",
+      Logger.info("TCPsession", "received an already packaged data byte string.",
         tags: [:Network, :Package]
       )
       return received_data
@@ -106,7 +106,7 @@ class TCPsession
       )
       return Package.new(received_data)
     else
-      Logger.warn("TCPsession", "Does not know what it recieved as data. (#{received_data.class})",
+      Logger.warn("TCPsession", "Does not know what it received as data. (#{received_data.class})",
         tags: [:Network, :Package]
       )
     end
@@ -224,7 +224,7 @@ class TCPsession
   def await_data_msg(use_package = true)
     return nil if closed?
     begin
-      # when a new message arives, remove the end-line flag of the string recieved
+      # when a new message arives, remove the end-line flag of the string received
       response_string = @socket.gets()
       raise SocketClosedException.new() if response_string.nil?
       response_string.chomp() # <- always remove the messages end-line flag.
@@ -256,7 +256,7 @@ class TCPsession
         )
       end
     end
-    # if connection is was still responsive, proccess their responces
+    # if connection is was still responsive, process their responces
     if response_string
       before_encoding = response_string
       sending_data = response_string.encode(

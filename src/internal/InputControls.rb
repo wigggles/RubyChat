@@ -1,11 +1,12 @@
 #===============================================================================================================================
 # !!! InputControls.rb   |  Manages the button input that allows mapping and additional check methods.
 #===============================================================================================================================
+$controls = nil
 class InputControls
 =begin
-Keeps track of all User defined input mappings and current button/key states for Input related statments.
+Keeps track of all User defined input mappings and current button/key states for Input related statements.
 --------------------------------------       --------------------------------------       --------------------------------------
-         Avaliable Control Schemes:                           |                Tack Buttons: *For an xbox 360 Controler*     
+         Available Control Schemes:                           |                Tack Buttons: *For an xbox 360 Controller*     
   --------------------------------------                      |                             
            Menu Navigation                                    |                             
             :menu_up                                          |                             gp_0 = A
@@ -30,7 +31,7 @@ Keeps track of all User defined input mappings and current button/key states for
             :action_key                                       |                              gp_up
             :mouse_lclick                                     |                              gp_left
             :mouse_rclick                                     |                              gp_right
-            :cancel_action                                    |                **  Does ALL anolog stick input **
+            :cancel_action                                    |                **  Does ALL analog stick input **
             :debug_action_one                                 |                                          
             :debug_action_two                                 |
 
@@ -38,7 +39,7 @@ Keeps track of all User defined input mappings and current button/key states for
 Basic Use:
    $controls.key_press?(:move_left)      -=- Check to see if any input key used for player movement to the left has been triggered.
    $controls.holding?(:move_left)
-   $controls.key_press?(:mouse_lclick)   -=- Check to see if a key/button trigger was depresed responsable for mouse clicking.
+   $controls.key_press?(:mouse_lclick)   -=- Check to see if a key/button trigger was depressed responsible for mouse clicking.
    $controls.trigger?(:mouse_lclick)
         *( Will only use a :symbol from the @function_map table )*
                        --------------------------------------   
@@ -55,10 +56,10 @@ To make changes the Control Scheme table you can use:
    $controls.function_map[:Scheme_Name].delete(:Removed_Key)     -=- Removes button from control scheme.
    
 Changing schemes:
-   $controls.function_map.delete(:Remove_Scheme)     -=- Removes control shceme from mapping.
+   $controls.function_map.delete(:Remove_Scheme)     -=- Removes control scheme from mapping.
    $controls.function_map[:New_Scheme] = [:buttons]  -=- Creates a new control scheme for mapping.
 --------------------------------------       --------------------------------------       --------------------------------------
-Most of the game input is wrapped into Gosu::Window dues to the way Gosu recives calls back a button key input it will pass it 
+Most of the game input is wrapped into Gosu::Window dues to the way Gosu receives calls back a button key input it will pass it 
   to Program ( $application ) class by the use of:
      
    + virtual void button_down(Gosu::Button) {}  +  Which is handed off to the same $application function name.
@@ -76,8 +77,8 @@ This and more information on Gosu C Headers can be found here:  https://www.libg
 def map_keyboard()
   @table = {
     :right       =>  79, :left        =>  80, :down     =>  81, :up       =>  82, :period    =>  55, :question   =>  56,
-    :collon      =>  51, :equils      =>  46, :comma    =>  54, :dash     =>  45, :tiddle    =>  53, :fslash     =>  49, 
-    :openbracket =>  47, :closebraket =>  48, :quote    =>  52, :lshift   => 225, :rshift    => 229, :pause      =>  72,
+    :colon      =>  51, :equals      =>  46, :comma    =>  54, :dash     =>  45, :tilde    =>  53, :fslash     =>  49, 
+    :openbracket =>  47, :closebracket =>  48, :quote    =>  52, :lshift   => 225, :rshift    => 229, :pause      =>  72,
     :l_clk       => 256, :m_clk       => 257, :r_clk    => 258, :mouse_wu => 259, :mouse_wd  => 260,
     :return      =>  40, :backspace   =>  42, :space    =>  44, :esc      =>  41, :tab       =>  43,
     :lctrl       => 228, :rctrl       => 224, :lalt     => 226, :ralt     => 230,
@@ -124,11 +125,9 @@ end
   #D: Create the input class variables.
   #---------------------------------------------------------------------------------------------------------
   def initialize()
-    @prevously_pressed_key = nil #DV Keeps track of previous key pressed as to not spam the console when printing input keys.
-    return unless $controls.nil?
+    @previously_pressed_key = nil #DV Keeps track of previous key pressed as to not spam the console when printing input keys.
     map_keyboard()
-    reset_defualts()
-    $controls  = self     # Make sure that only one instance of input is active at any given time.
+    reset_defaults()   
     @triggers  = []       #DV Adds all trigger keys to @triggered at the same time.
     @input_lag = 0        #DV Makes sure that system has enough time to detect all buttons depressed.
     @input_repeat = 0     #DV Time between repeated character input when holding down a key.
@@ -141,7 +140,7 @@ end
   #---------------------------------------------------------------------------------------------------------
   #D: Reset the control scheme back to default.
   #---------------------------------------------------------------------------------------------------------
-  def reset_defualts
+  def reset_defaults
     @function_map = { #DV Hash container for the current control scheme.
       #--------------------------------------
       # In game menu navigation
@@ -185,7 +184,7 @@ end
   def get_text_input()
     key = '' # string value of input key
     button_id = nil
-    # keep up with key repeat hold chacacter input
+    # keep up with key repeat hold character input
     if @input_repeat > 0
       @input_repeat -= 1
     end
@@ -228,33 +227,33 @@ end
         key = butt_chr.to_s
       #--------------------------------------
       # specials
-      elsif %w[period question collon equils comma dash tiddle fslash openbracket closebraket quote].include?(butt_chr.to_s)
+      elsif %w[period question colon equals comma dash tilde fslash openbracket closebracket quote].include?(butt_chr.to_s)
         if self.holding?(:shift)
           case butt_chr.to_s
           when 'period' then key = '>'
           when 'question' then key = '?'
-          when 'collon' then key = ':'
-          when 'equils' then key = '+'
+          when 'colon' then key = ':'
+          when 'equals' then key = '+'
           when 'comma' then key = '<'
           when 'dash' then key = '_'
-          when 'tiddle' then key = '~'
+          when 'tilde' then key = '~'
           when 'fslash' then key = '|'
           when 'openbracket' then key = '{'
-          when 'closebraket' then key = '}'
+          when 'closebracket' then key = '}'
           when 'quote' then key = '"'
           end
         else
           case butt_chr.to_s
           when 'period' then key = '.'
           when 'question' then key = '/'
-          when 'collon' then key = ';'
-          when 'equils' then key = '='
+          when 'colon' then key = ';'
+          when 'equals' then key = '='
           when 'comma' then key = ','
           when 'dash' then key = '-'
-          when 'tiddle' then key = '`'
+          when 'tilde' then key = '`'
           when 'fslash' then key = '\\'
           when 'openbracket' then key = '['
-          when 'closebraket' then key = ']'
+          when 'closebracket' then key = ']'
           when 'quote' then key = '\''
           end
         end
@@ -430,8 +429,8 @@ end
     return if $application.nil?
     butt_id = $application.get_input_key 
     #print("#{$application.input}\n"); exit # display current keys mapped to methods for the $application class
-    return if butt_id.nil? or @prevously_pressed_key == butt_id
-    @prevously_pressed_key = butt_id
+    return if butt_id.nil? or @previously_pressed_key == butt_id
+    @previously_pressed_key = butt_id
     #print("(#{@table.key(butt_id)}) for Win32API/n")
   end
   #---------------------------------------------------------------------------------------------------------
@@ -465,15 +464,10 @@ end
   def left_joy_stick
     # [up, down, left, right]
     directions = [false, false, false, false]
-    if $application.button_down?(295)    # stick up
-      directions[0] = true
-    elsif $application.button_down?(296) # stick down
-      directions[1] = true
-    elsif $application.button_down?(293) # stick left
-      directions[2] = true
-    elsif $application.button_down?(294) # stick right
-      directions[3] = true
-    end
+    directions[0] = Gosu.button_down?(Gosu::GP_0_LEFT_STICK_Y_AXIS) # stick up
+    directions[1] = Gosu.button_down?(Gosu::GP_0_LEFT_STICK_Y_AXIS) # stick down
+    directions[2] = Gosu.button_down?(Gosu::GP_0_LEFT_STICK_X_AXIS) # stick left
+    directions[3] = Gosu.button_down?(Gosu::GP_0_LEFT_STICK_X_AXIS) # stick right
     return directions
   end
   #---------------------------------------------------------------------------------------------------------
@@ -482,34 +476,23 @@ end
   def right_joy_stick
     # [up, down, left, right]
     directions = [false, false, false, false]
-    if $application.button_down?(275)    # stick up
-      directions[0] = true
-    elsif $application.button_down?(276) # stick down
-      directions[1] = true
-    elsif $application.button_down?(273) # stick left
-      directions[2] = true
-    elsif $application.button_down?(274) # stick right
-      directions[3] = true
-    end
+    directions[0] = Gosu.button_down?(Gosu::GP_0_RIGHT_STICK_Y_AXIS) # stick up
+    directions[1] = Gosu.button_down?(Gosu::GP_0_RIGHT_STICK_Y_AXIS) # stick down
+    directions[2] = Gosu.button_down?(Gosu::GP_0_RIGHT_STICK_X_AXIS) # stick left
+    directions[3] = Gosu.button_down?(Gosu::GP_0_RIGHT_STICK_X_AXIS) # stick right
+    return directions
+  end
+  #---------------------------------------------------------------------------------------------------------
+  #D: Check basic move directions. Alternatively you can still take advantage of the Gosu keyboard mappings.
+  #D: https://www.rubydoc.info/gems/gosu/Gosu
+  #D: https://www.rubydoc.info/gems/gosu/Gosu#button_down%3F-class_method
+  #---------------------------------------------------------------------------------------------------------
+  def input_move?
+    directions = [false, false, false, false]
+    directions[0] = ( Gosu.button_down?(Gosu::KB_UP) || Gosu.button_down?(Gosu::KB_W) )    # move up
+    directions[1] = ( Gosu.button_down?(Gosu::KB_DOWN) || Gosu.button_down?(Gosu::KB_S) )  # move down
+    directions[2] = ( Gosu.button_down?(Gosu::KB_LEFT) || Gosu.button_down?(Gosu::KB_A) )  # move left
+    directions[3] = ( Gosu.button_down?(Gosu::KB_RIGHT) || Gosu.button_down?(Gosu::KB_D) ) # move right
     return directions
   end
 end
-
-
-#===============================================================================================================================
-# Copyright (C) 2017 Wiggles
-#
-# This library is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either
-# version 2.1 of the License, or (at your option) any later version.
-#
-# This library is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#===============================================================================================================================

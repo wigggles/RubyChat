@@ -21,7 +21,7 @@ module Configuration
   #--------------------------------------
   # GUI mode settings:
   CLI_MODE   = false  # Use comand line interface, or 'false' for Gosu GUI.
-  FULLSCREEN = false
+  FULL_SCREEN = false
   module ResolutionModes
     DESK_HDMED = [1920, 1080]
     DESK_HDSML = [1366,  768]
@@ -84,7 +84,7 @@ module Configuration
     # If using a semi human readable id that was generated, it needs to be at least 10 characters.
     if as_string
       # The ID is converted to base 16 hex, doubling its string length. A generalization of a poor probability
-      # can bee seen with only using a portion of the total avaliable unique identifiers. Larger values also
+      # can be seen with only using a portion of the total avaliable unique identifiers. Larger values also
       # require more bytes to package data when transporting it around.
       new_id = new_id.to_s(16)
       if micro # only grab 3 bytes (6 characters), quite high chances of generating an existing id
@@ -102,10 +102,10 @@ module Configuration
       end
       # optionally, convert the hex string from the integer id hex readable string into a raw byte string halfing
       # its size, however this makes the id's not human readable unless they are unpacked later. This packaging
-      # requires that their be an even number of characters. One issue to keep in mind when workign with raw bytes
+      # requires that there be an even number of characters. One issue to keep in mind when working with raw bytes
       # is the potential to send them into terminal/console prints/puts and or socket issues whith internal byte codes.
       # *NOTE* This is why sometimes its best to send a string of the bytes represented by 2 characters instead with
-      # net traffic or saving to file space.
+      # net traffic or saving to file space when working with raw byte file types.
       new_id = [new_id].pack('H*') if packed
     end
     # Even using the 4 byte system, one thousandth of the maximum number of IDs generated would still just about support 500_000

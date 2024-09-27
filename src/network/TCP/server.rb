@@ -111,7 +111,7 @@ class TCPserver
     # prevent same usernames between multiple clients
     duplicate_user = handle_handshake(client_session, requested_name)
     unless duplicate_user
-      # while client connection remains open, recieve data from them, proccess it and notify other clients
+      # while client connection remains open, receive data from them, process it and notify other clients
       while incoming_data_byteString = client_session.await_data_msg()
         case incoming_data_byteString
         when TCPsession::Package
@@ -119,7 +119,7 @@ class TCPserver
           # this data can be verified if configured correctly to add a layer of error netting
           # as well as additional featuring when handling the data with other Objects
           if incoming_data_byteString.has_error?
-            Logger.warn("TCPServer", "Recieved a message from a client malformed. (#{incoming_data_byteString.inspect})",
+            Logger.warn("TCPServer", "received a message from a client malformed. (#{incoming_data_byteString.inspect})",
               tags: [:Network]
             )
             break if @drop_clients_on_package_error
@@ -244,7 +244,7 @@ class TCPserver
     )
     # syncronize the client's local session's Client ref_id with what the server reports them as being localy to it.
     # this means the local ref_id the client generated will be thrown out, and a new ref_id for the Server's client pool
-    # Client objects will be syncronized to that clients socket. If the server recieves a message from a client whos
+    # Client objects will be syncronized to that clients socket. If the server receives a message from a client whos
     # ref_id isn't in the pool, it can check for that and many more kinds of things.
     Logger.debug("TCPserver", "Reporting to client splash ref_id:(#{client_session.description.ref_id}).",
       tags: [:Network, :Client]

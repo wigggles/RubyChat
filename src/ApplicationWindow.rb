@@ -18,6 +18,7 @@ require './src/GUI/Components/Button.rb'
 require './src/GUI/Components/CheckBox.rb'
 require './src/GUI/Components/TextField.rb'
 require './src/GUI/Components/ConsoleBox.rb'
+require './src/GUI/Components/TextWall.rb'
 
 require './src/States/MainState.rb'
 
@@ -28,7 +29,6 @@ require './src/Game/World_00.rb'
 #===============================================================================================================================
 class ApplicationWindow < Gosu::Window
   @@application_state = nil
-  @@controls = nil
   @@font = nil
   @@service_mode = nil || :offline
 
@@ -38,14 +38,14 @@ class ApplicationWindow < Gosu::Window
     GC.start()
     @disposed = false
     # create a new Gosu::Window
-    super(Configuration::SCREEN_WIDTH, Configuration::SCREEN_HEIGHT, Configuration::FULLSCREEN)
+    super(Configuration::SCREEN_WIDTH, Configuration::SCREEN_HEIGHT, Configuration::FULL_SCREEN)
     @@font = Gosu::Font.new(self, nil, 24)
-    @@controls = InputControls.new()
+    $controls = InputControls.new()
     # create a new session socket manager
     @is_server = is_server
     # start up the GUI's initial state manager
     $application = self
-    set_app_state(MainState.new(self))
+    set_app_state(MainState.new())
     # delay the autostart of network services, this provides enough time for the GUI to be created
     Thread.new {
       sleep(0.1)
@@ -60,6 +60,12 @@ class ApplicationWindow < Gosu::Window
       # allow Logger to write into the '@application_state' if that Object has a method for it
       Logger.bind_application_window(self)
     }
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  # Required to display upon request the Gosu licensing.
+  def show_gosu_legal
+    set_app_state(LicensesState.new())
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -93,7 +99,7 @@ class ApplicationWindow < Gosu::Window
         @server.listen(self)
       }
     else
-      Logger.error("ApplicationWindow", "Unkown socket server type. (#{@@service_mode})")
+      Logger.error("ApplicationWindow", "Unknown socket server type. (#{@@service_mode})")
     end
   end
 
@@ -114,7 +120,7 @@ class ApplicationWindow < Gosu::Window
         end
       }
     else
-      Logger.error("ApplicationWindow", "Unkown socket client type. (#{@@service_mode})")
+      Logger.error("ApplicationWindow", "Unknown socket client type. (#{@@service_mode})")
     end
   end
 
@@ -134,21 +140,21 @@ class ApplicationWindow < Gosu::Window
   #---------------------------------------------------------------------------------------------------------
   #:D Called by Gosu::Window when a button was pressed, but was now released.
   def button_up(id)
-    return if @@controls.nil?
-    @@controls.button_up(id)
+    return if $controls.nil?
+    $controls.button_up(id)
     super(id)
   end
   #---------------------------------------------------------------------------------------------------------
   #:D Called by Gosu::Window when a button has been pressed.
   def button_down(id)
-    return if @@controls.nil?
-    @@controls.button_down(id)
+    return if $controls.nil?
+    $controls.button_down(id)
     super(id)
   end
 
   #---------------------------------------------------------------------------------------------------------
   def controls
-    return @@controls
+    return $controls
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -198,7 +204,7 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Used to utilze the open session socket to send data.
+  # Used to utilize the open session socket to send data.
   def send_socket_data(data)
     return nil if network_service().nil?
     return nil if current_session().nil?    
@@ -211,7 +217,7 @@ class ApplicationWindow < Gosu::Window
       when String
         data_byte_string = current_session.package_data(data)
       else
-        Logger.error("ApplicationWindow", "Server attempting to send unkown data type. (#{data.class})")
+        Logger.error("ApplicationWindow", "Server attempting to send Unknown data type. (#{data.class})")
         return nil
       end
       Logger.debug("ApplicationWindow", "Server sending data. (#{data.inspect})")
@@ -264,8 +270,8 @@ class ApplicationWindow < Gosu::Window
         session = current_session()
         unless session.nil?
           shutdown_msg = "Server shut down, goodbye #{service.client_pool.count} clients!"
-          outdata = session.package_data(shutdown_msg)
-          service.send_bytes_to_everyone(outdata)
+          out_data = session.package_data(shutdown_msg)
+          service.send_bytes_to_everyone(out_data)
         end
       end
       # shut down the service
@@ -288,7 +294,7 @@ class ApplicationWindow < Gosu::Window
   #---------------------------------------------------------------------------------------------------------
   def send_data_into_state(data)
     return false if @@application_state.nil?
-    @@application_state.recieve_network_data(data)
+    @@application_state.receive_network_data(data)
     return true
   end
 
@@ -300,17 +306,17 @@ class ApplicationWindow < Gosu::Window
 
   #---------------------------------------------------------------------------------------------------------
   # Gosu bindings for the operating system's running environment provide a 'tick()' which is used as a game
-  # clock. This clock loop is what checks for updates in a timley fasion. This clock should not be blocked.
+  # clock. This clock loop is what checks for updates in a timely fashion. This clock should not be blocked.
   def update()
     return if disposed?
     # update the manager state and shared input controls
     @@application_state.update unless @@application_state.nil?
-    @@controls.update() unless @@controls.nil?
+    $controls.update() unless $controls.nil?
   end
 
   #---------------------------------------------------------------------------------------------------------
   # To keep things robust and fluid, GUI states are handled independently of the ApplicationWindow. This
-  # provides the states for GarbageCollection in a simpler fasion. This also provides a way of changing states
+  # provides the states for GarbageCollection in a simpler fashion. This also provides a way of changing states
   # with ease, so if a state is a WorldMap or a Menu this transition/interaction can be handled by the Application.
   def draw()
     @@font.draw_text("FPS: #{Gosu.fps}", 16, 4, 0, 1, 1, 0xFF_ffffff)
@@ -318,8 +324,8 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Flag this class as being disposed of, which means it anounces do not use me, im getting rid of my things.
-  # This most notibly happens on and around shutdowns.
+  # Flag this class as being disposed of, which means it announces do not use me, im getting rid of my things.
+  # This most notably happens on and around shutdowns.
   def dispose()
     @disposed = true
   end

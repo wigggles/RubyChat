@@ -67,7 +67,7 @@ class TCPclient
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # This is a blocking function, it uses two threads to send/recieve data.
+  # This is a blocking function, it uses two threads to send/receive data.
   def connect(report_to: nil)
     # attempt to start a new thread, but catch exceptions thrown if anything dies along the way
     begin 
@@ -97,7 +97,7 @@ class TCPclient
     while incoming_data_package = @@client_session.await_data_msg()
       incoming_data_package.calculate_latency() # calculate client server latency
       time_stmp, from_user_id, srvr_time_stmp, data_mode, data = incoming_data_package.to_a()
-      Logger.debug("TCPclient", "Recieved server package from: (#{from_user_id.inspect})",
+      Logger.debug("TCPclient", "received server package from: (#{from_user_id.inspect})",
         tags: [:Network, :Package]
       )
       if Configuration::CLI_MODE
@@ -109,7 +109,7 @@ class TCPclient
       elsif report_to
         report_to.send_data_into_state(incoming_data_package)
       else
-        Logger.error("TCPclient", "Recieved data from the server but has no way to display it.",
+        Logger.error("TCPclient", "received data from the server but has no way to display it.",
           tags: [:Network]
         )
       end

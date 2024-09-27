@@ -43,7 +43,7 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   #D: Random number generation bench marks and status jobs.
   #---------------------------------------------------------------------------------------------------------
-  def benches_randomnumber(index, runfor = 1)
+  def benches_random_number(index, runfor = 1)
     case index
     when BT::RND_NUMBER::FloatPoint
       h = 'float point'; s = Benchmark.measure{runfor.times { |nr|
@@ -135,9 +135,48 @@ class BenchTests
     return "#{h}\t(#{runfor})\t#{s}" # benchmark adds \n return from s
   end
   #---------------------------------------------------------------------------------------------------------
+  #D: Speed tests for input handling types.
+  #---------------------------------------------------------------------------------------------------------
+  def benches_input_speeds(index, runfor)
+    $controls = InputControls.new() if $controls.nil?
+    case index
+    when BT::INPUT_SPEED::UPDATE_LOOP
+      h = 'scheme update loop'; s = Benchmark.measure{runfor.times { |nr|
+        $controls.update
+      }}
+    when BT::INPUT_SPEED::TRIGGER
+      h = '$controls.trigger?'; s = Benchmark.measure{runfor.times { |nr|
+        $controls.trigger?(:backspace, true)
+      }}
+    when BT::INPUT_SPEED::HOLDING
+      h = '$controls.holding?'; s = Benchmark.measure{runfor.times { |nr|
+        $controls.holding?(:backspace, true)
+      }}
+    when BT::INPUT_SPEED::SCHEME_TRIGGER
+      h = 'is scheme.trigger?'; s = Benchmark.measure{runfor.times { |nr|
+        $controls.trigger?(:move_up)
+      }}
+    when BT::INPUT_SPEED::SCHEME_HOLD
+      h = 'is scheme.holding?'; s = Benchmark.measure{runfor.times { |nr|
+        $controls.holding?(:move_up)
+      }}
+    when BT::INPUT_SPEED::GOSU_BUTTON_DOWN
+      h = 'Gosu.button_down?'; s = Benchmark.measure{runfor.times { |nr|
+        Gosu.button_down?(Gosu::KB_UP)
+      }}
+    when BT::INPUT_SPEED::HYBRID_MOVE
+      h = 'input hybrid movement'; s = Benchmark.measure{runfor.times { |nr|
+        $controls.input_move?
+      }}
+    else
+      s = "Unknown bench mark run for 'Input Speed' index(#{index})\n"
+    end
+    return "#{h}\t(#{runfor})\t#{s}" # benchmark adds \n return from s
+  end
+  #---------------------------------------------------------------------------------------------------------
   #D: Speed tests between diffrent call pointer types.
   #---------------------------------------------------------------------------------------------------------
-  def benches_callmethod(index, runfor)
+  def benches_call_method(index, runfor)
     case index
     when BT::CALL_METHOD::MATH_local
       h = 'local'; s = Benchmark.measure{runfor.times { |nr|
@@ -209,27 +248,27 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   #D: Speed comparison for TCP network socket operations.
   #---------------------------------------------------------------------------------------------------------
-  def benches_tcpNetwork(index, runfor)
+  def benches_TCP_NETWORK(index, runfor)
     # Checks out aspects associated with TCPsession objects and network sockets.
     # run test at index:
     case index
-    when BT::TCPNETWORK::REF_ID_integer
+    when BT::TCP_NETWORK::REF_ID_integer
       h = 'ref_id generation integer'; s = Benchmark.measure{runfor.times { |int|
         new_id = Configuration.generate_new_ref_id(as_string: false)
       }}
-    when BT::TCPNETWORK::REF_ID_string
+    when BT::TCP_NETWORK::REF_ID_string
       h = 'ref_id generation string'; s = Benchmark.measure{runfor.times { |int|
         new_id = Configuration.generate_new_ref_id(as_string: true)
       }}
-    when BT::TCPNETWORK::REF_ID_packed
+    when BT::TCP_NETWORK::REF_ID_packed
       h = 'ref_id generation string packed'; s = Benchmark.measure{runfor.times { |int|
         new_id = Configuration.generate_new_ref_id(as_string: true, packed: true)
       }}
-    when BT::TCPNETWORK::PACKAGE_new
+    when BT::TCP_NETWORK::PACKAGE_new
       h = 'TCPsession::Package creation'; s = Benchmark.measure{runfor.times { |int|
         create_package = TCPsession::Package.new(nil, '88888888')
       }}
-    when BT::TCPNETWORK::PACK_string_bytes
+    when BT::TCP_NETWORK::PACK_string_bytes
       loaded_package = TCPsession::Package.new(nil, '88888888')
       byte_string = nil
       h = 'TCPsession::Package string compression'; s = Benchmark.measure{runfor.times { |int|
@@ -237,7 +276,7 @@ class BenchTests
           "This is a test of the benchmarking TCPsession data package, this is only a test."
         )
       }}
-    when BT::TCPNETWORK::UNPACK_bytes_string
+    when BT::TCP_NETWORK::UNPACK_bytes_string
       byte_string = "\xEA*%\xC7\xFB{<\x0088888888\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00This is a test of the benchmarking TCPsession data package, this is only a test."
       string_msg = ""
       h = 'TCPsession::Package string expansion'; s = Benchmark.measure{runfor.times { |int|

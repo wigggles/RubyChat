@@ -116,7 +116,7 @@ class ClientPool
     when :username
       located = @clients.select { |client| client.username == search_term }
     end
-    # proccess Array of any found matches
+    # process Array of any found matches
     return nil if located.nil?
     sml_string_list = located.map() { |client|
       [client.ref_id, client.username]
@@ -157,7 +157,7 @@ class ClientPool
   # Recived a request to sync clients from server session.
   def sync_requested(package)
     sync_data = package.expand_client_data()
-    Logger.debug("ClientPool", "Local has recieved request to sync with client pool."+
+    Logger.debug("ClientPool", "Local has received request to sync with client pool."+
       "\npackage: (#{package.inspect})"+
       "\nclient_data: (#{sync_data.inspect})",
       tags: [:Network, :Client]
@@ -173,7 +173,7 @@ class ClientPool
         return true
       end
     end
-    Logger.error("ClientPool", "Recieved request to sync pool but it's data was malformed."+
+    Logger.error("ClientPool", "received request to sync pool but it's data was malformed."+
       "\vpackage: (#{package.inspect})"+
       "\vsync_data: (#{sync_data})",
       tags: [:Client]
