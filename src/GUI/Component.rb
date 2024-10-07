@@ -25,6 +25,16 @@ class GUI::Component
     @active = true
   end
   #--------------------------------------
+  #D: Check if the component is under the mouse cursor.
+  def under_mouse?
+    return (
+      $application.mouse_x > @x &&
+      $application.mouse_x < @x + @width &&
+      $application.mouse_y > @y &&
+      $application.mouse_y < @y + @height
+    )
+  end
+  #--------------------------------------
   def bottom()
     return @y + @height
   end

@@ -76,12 +76,12 @@ This and more information on Gosu C Headers can be found here:  https://www.libg
 #-------------------------------------------------------------------------------------------------------------------------------
 def map_keyboard()
   @table = {
-    :right       =>  79, :left        =>  80, :down     =>  81, :up       =>  82, :period    =>  55, :question   =>  56,
-    :colon      =>  51, :equals      =>  46, :comma    =>  54, :dash     =>  45, :tilde    =>  53, :fslash     =>  49, 
+    :right       =>  79, :left         =>  80, :down     =>  81, :up       =>  82, :period    =>  55, :question   =>  56,
+    :colon       =>  51, :equals       =>  46, :comma    =>  54, :dash     =>  45, :tilde     =>  53, :fslash     =>  49, 
     :openbracket =>  47, :closebracket =>  48, :quote    =>  52, :lshift   => 225, :rshift    => 229, :pause      =>  72,
-    :l_clk       => 256, :m_clk       => 257, :r_clk    => 258, :mouse_wu => 259, :mouse_wd  => 260,
-    :return      =>  40, :backspace   =>  42, :space    =>  44, :esc      =>  41, :tab       =>  43,
-    :lctrl       => 228, :rctrl       => 224, :lalt     => 226, :ralt     => 230,
+    :l_clk       => 256, :m_clk        => 257, :r_clk    => 258, :mouse_wu => 259, :mouse_wd  => 260,
+    :return      =>  40, :backspace    =>  42, :space    =>  44, :esc      =>  41, :tab       =>  43,
+    :lctrl       => 228, :rctrl        => 224, :lalt     => 226, :ralt     => 230,
     #--------------------------------------
     :end        =>  77, :home        =>  74, :ins         =>  73, :del      =>  76, :lwinkey   => 227, :rwinkey  => 231,
     :capslock   =>  57, :scrolllock  =>  71, :numlock     =>  83, :pageup   =>  75, :pagedwn   =>  78, 
