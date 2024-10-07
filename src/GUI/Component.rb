@@ -10,13 +10,27 @@ class GUI::Component
   attr_reader :owner
   #--------------------------------------
   #D: Creates the Kernel Class (klass) instance.
-  def initialize(options = {})
-    @width  = options[:width]  || 0  #DV Width of the viewing Rect.
-    @height = options[:height] || 0  #DV Height of the viewing Rect.
-    @x = options[:x] || 0
-    @y = options[:y] || 0
-    @z = options[:z] || 0
-    @owner = options[:owner] || nil
+  def initialize(
+    options = nil,
+    width: 0, height: 0,
+    x: 0, y: 0, z: 0,
+    owner: nil
+  )
+    if options
+      @height = options.fetch(:height, 0)
+      @width  = options.fetch(:width, 0)
+      @x = options.fetch(:x, 0)
+      @y = options.fetch(:y, 0)
+      @z = options.fetch(:z, 0)
+      @owner = options.fetch(:owner, nil)
+    else
+      @height = height
+      @width  = width
+      @x = x
+      @y = y
+      @z = z
+      @owner = owner
+    end
   end
   #--------------------------------------
   #D: Called from child class after initialization.

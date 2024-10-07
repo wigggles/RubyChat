@@ -4,20 +4,20 @@
 class GameWorld
   MAX_OBJECTS = 100
 
-  @@parent_state = nil
-
   attr_accessor :x, :y, :world_x, :world_y, :view_width, :view_height
   attr_reader :width, :height, :objects
   #---------------------------------------------------------------------------------------------------------
   def initialize(parent_state, options = {})
-    @@parent_state = parent_state
+    @parent_state = parent_state
     @disposed = false
     # Where the world is drawn at with in the GUI window
     @x = options[:x] || 0 unless @x
     @y = options[:y] || 0 unless @y
     # How much of the GameWorld is shown with in the GUI window
-    @view_width  = options[:view_width]  || Configuration::SCREEN_WIDTH  / 4 unless @view_width
-    @view_height = options[:view_height] || Configuration::SCREEN_HEIGHT / 4 unless @view_height
+    unless $application.nil?
+      @view_width  = options[:view_width]  || $application.width  / 4 unless @view_width
+      @view_height = options[:view_height] || $application.height / 4 unless @view_height
+    end
     # Used for offsetting the draws for tilemaps/WorldObjects
     @world_x = options[:world_x] || 0 unless @world_x
     @world_y = options[:world_y] || 0 unless @world_y
@@ -40,13 +40,13 @@ class GameWorld
   #---------------------------------------------------------------------------------------------------------
   # Get a WorldObject if it exists in the world.
   def get_object(ref_id)
-    return nil if @@parent_state.nil? || @disposed
+    return nil if @parent_state.nil? || @disposed
     return @objects[ref_id]
   end
   #---------------------------------------------------------------------------------------------------------
   # Remove an object from the world.
   def dispose_object(ref_id)
-    return nil if @@parent_state.nil? || @disposed
+    return nil if @parent_state.nil? || @disposed
     if @objects[ref_id]
       @objects[ref_id].dispose()
       @objects[ref_id].delete()
@@ -57,13 +57,13 @@ class GameWorld
   #---------------------------------------------------------------------------------------------------------
   # Server called synchronizing WorldObject with clients.
   def world_object_change(ref_id = 0, options = {})
-    return nil if @@parent_window.nil? || @disposed
-    if @@parent_window.is_server?
+    return nil if $application.nil? || @disposed
+    if $application.is_server?
       new_x = options[:new_x] || options[:move_toX] || 0   # Where the object is at currently, this is sent to
       new_y = options[:new_y] || options[:move_toX] || 0   # inform clients where objects are in the world locally.
-      data_package = @@parent_window.getNew_session_package()
+      data_package = $application.getNew_session_package()
       data_package.pack_dt_object([ref_id, new_x, new_y])
-      @@parent_window.send_socket_data(data_package)
+      $application.send_socket_data(data_package)
       return true
     end
     Logger.warn("GameWorld", "Only the server can update world objects.")
@@ -72,13 +72,13 @@ class GameWorld
   #---------------------------------------------------------------------------------------------------------
   # Synchronizing GameWorld with clients.
   def sync_world()
-    return nil if @@parent_window.nil? || @disposed
-    if @@parent_window.is_server?
-      data_package = @@parent_window.getNew_session_package()
+    return nil if $application.nil? || @disposed
+    if $application.is_server?
+      data_package = $application.getNew_session_package()
       packtype = 0   # How the map_data should be packaged
       map_data = []  # An array of data used to sync a portion of the world
       data_package.pack_dt_object([packtype, map_data])
-      @@parent_window.send_socket_data(data_package)
+      $application.send_socket_data(data_package)
       return true
     end
     Logger.warn("GameWorld", "Only the server can update the world.")
@@ -96,7 +96,7 @@ class GameWorld
   end
   #---------------------------------------------------------------------------------------------------------
   def update()
-    return if @@parent_state.nil? || @disposed
+    return if @parent_state.nil? || @disposed
     @objects.each { |ref_id, world_object|
       world_object.update()
     }
@@ -104,7 +104,7 @@ class GameWorld
   #---------------------------------------------------------------------------------------------------------
   # Draw the WorldObjects known to exist in the world.
   def draw()
-    return if @@parent_state.nil? || @disposed
+    return if @parent_state.nil? || @disposed
     @objects.each { |ref_id, world_object|
       world_object.draw()
     }

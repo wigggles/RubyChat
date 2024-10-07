@@ -4,10 +4,11 @@
 class GUI::ConsoleBox < GUI::Component
   #---------------------------------------------------------------------------------------------------------
   #D: Create object Klass.
-  def initialize(options = {})
-    super(options)
+  def initialize(
+    font_size: 18,
+    **supers # send the rest of the keyword arguments into parent constructor klass
+  ); super(**supers)
     @bgcolor = 0xFF_6c6c6c   #DV Background color used to fill viewing Rect.
-    font_size = options[:font_size] || 18
     @font = Gosu::Font.new($application, "verdana", font_size)
     max_char_width = @font.text_width("W").round() * 0.55
     @line_width = (@width / max_char_width).round() #DV Max characters in a line before wrapping.
@@ -18,9 +19,9 @@ class GUI::ConsoleBox < GUI::Component
   end
   #---------------------------------------------------------------------------------------------------------
   def draw_background(screen_x, screen_y, color)
-    @bgimg = GUI::BlobDraw.get_image({
-      of: :round_rect, width: @width, height: @height, radius: 8, outlined: true
-    }) if @bgimg.nil?
+    @bgimg = GUI::BlobDraw.get_image(
+      of_type: :round_rect, width: @width, height: @height, radius: 8, outlined: true
+    ) if @bgimg.nil?
     @bgimg.draw(screen_x, screen_y, @z, 1.0, 1.0, color)
   end
   #---------------------------------------------------------------------------------------------------------

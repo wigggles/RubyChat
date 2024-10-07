@@ -5,13 +5,17 @@ class GUI::CheckBox < GUI::Button
   attr_accessor :toggled
   #---------------------------------------------------------------------------------------------------------
   #D: Creates the Kernel Class (klass) instance.
-  def initialize(options = {})
-    super(options)
-    @radius = options[:radius] || 12
-    @width  = options[:width]  || @radius * 2 || 24
-    @height = options[:height] || @radius * 2 || 24
-    @toggled = options[:toggled] || false
-    @scolor  = options[:scolor]  || Gosu::Color.argb(0xff_ff8866)
+  def initialize(
+    radius: 12,
+    toggled: false,
+    scolor: Gosu::Color.argb(0xff_ff8866),
+    **supers # send the rest of the keyword arguments into parent constructor klass
+  ); super(supers)
+    @radius = radius
+    @width  = supers[:width]  || @radius * 2 || 24
+    @height = supers[:height] || @radius * 2 || 24
+    @toggled = toggled
+    @scolor  = scolor
     is_ready()
   end
   #---------------------------------------------------------------------------------------------------------
@@ -20,7 +24,9 @@ class GUI::CheckBox < GUI::Button
     return false unless @is_highlighted
     return true if @has_actioned
     if @action.nil?
-      print("There is an error with checkbox\n In: #{@owner}")
+      Logger.error("CheckBox", "Callback method for @action in #{@owner} is not set.",
+        tags: [:GUI]
+      )
       return false
     end
     # use owner class for method call
@@ -39,7 +45,9 @@ class GUI::CheckBox < GUI::Button
   end
   #---------------------------------------------------------------------------------------------------------
   def draw_background(screen_x, screen_y, color)
-    @bgimg = GUI::BlobDraw.get_image({of: :circle, radius: @radius, outlined: true}) if @bgimg.nil?
+    @bgimg = GUI::BlobDraw.get_image(
+      of_type: :circle, radius: @radius, outlined: true, thickness: 3
+    ) if @bgimg.nil?
     @bgimg.draw(screen_x, screen_y, @z, 1.0, 1.0, color)
   end
   #---------------------------------------------------------------------------------------------------------

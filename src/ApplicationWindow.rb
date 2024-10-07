@@ -28,38 +28,63 @@ require './src/Game/World_00.rb'
 
 #===============================================================================================================================
 class ApplicationWindow < Gosu::Window
-  @@application_state = nil
-  @@font = nil
-  @@service_mode = nil || :offline
-
+  attr_reader :font, :service_mode
   #---------------------------------------------------------------------------------------------------------
   # Construct a server and listen for/to clients, or be a client and connect to a server.
-  def initialize(is_server = false)
+  def initialize(
+    is_server = false, 
+    fullscreen: Configuration::FULL_SCREEN, resizable: Configuration::RESIZABLE,
+    borderless: false, update_interval: Configuration::GOSU_UPDATE_MS
+  )
+    @service_mode = nil || :offline
     GC.start()
     @disposed = false
     # create a new Gosu::Window
-    super(Configuration::SCREEN_WIDTH, Configuration::SCREEN_HEIGHT, Configuration::FULL_SCREEN)
-    @@font = Gosu::Font.new(self, nil, 24)
+    super(
+      Configuration::INITIAL_SCREEN_WIDTH, Configuration::INITIAL_SCREEN_HEIGHT, {
+        fullscreen: fullscreen, resizable: (resizable && !fullscreen),
+        borderless: borderless, update_interval: update_interval
+      }
+    )
+    @font = Gosu::Font.new(self, nil, 24)
     $controls = InputControls.new()
     # create a new session socket manager
     @is_server = is_server
     # start up the GUI's initial state manager
     $application = self
+    $application.caption = "Gosu Network Demo"
+    @application_state = nil
     set_app_state(MainState.new())
     # delay the autostart of network services, this provides enough time for the GUI to be created
     Thread.new {
       sleep(0.1)
       if is_server
-        @@service_mode = :tcp_server
+        @service_mode = :tcp_server
         start_server_service()
       else
         @username = ARGV[0] || "GosuGUI_01"
-        @@service_mode = :tcp_client
-        start_client_service() if @@service_mode == :tcp_client
+        @service_mode = :tcp_client
+        start_client_service() if @service_mode == :tcp_client
       end
       # allow Logger to write into the '@application_state' if that Object has a method for it
       Logger.bind_application_window(self)
     }
+  end
+
+  #---------------------------------------------------------------------------------------------------------
+  def self.screen_width
+    return 0 if $application.nil?
+    return @width
+  end
+
+  def self.screen_height
+    return 0 if $application.nil?
+    return @height
+  end
+  
+  #---------------------------------------------------------------------------------------------------------
+  def needs_cursor?
+    return true
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -91,7 +116,7 @@ class ApplicationWindow < Gosu::Window
   #---------------------------------------------------------------------------------------------------------
   # If not already a client or running a server, start a new network server instance.
   def start_server_service()
-    case @@service_mode
+    case @service_mode
     when :tcp_server
       @server = TCPserver.new()
       send_data_into_state("TCPServer started, listening...")
@@ -99,7 +124,7 @@ class ApplicationWindow < Gosu::Window
         @server.listen(self)
       }
     else
-      Logger.error("ApplicationWindow", "Unknown socket server type. (#{@@service_mode})")
+      Logger.error("ApplicationWindow", "Unknown socket server type. (#{@service_mode})")
     end
   end
 
@@ -107,7 +132,7 @@ class ApplicationWindow < Gosu::Window
   # If not a server or already a client, start a new network client instance.
   def start_client_service()
     send_data_into_state("Attempting to connect to server...")
-    case @@service_mode
+    case @service_mode
     when :tcp_client
       Thread.new { 
         @client = TCPclient.new("localhost")
@@ -120,7 +145,7 @@ class ApplicationWindow < Gosu::Window
         end
       }
     else
-      Logger.error("ApplicationWindow", "Unknown socket client type. (#{@@service_mode})")
+      Logger.error("ApplicationWindow", "Unknown socket client type. (#{@service_mode})")
     end
   end
 
@@ -152,14 +177,22 @@ class ApplicationWindow < Gosu::Window
     super(id)
   end
 
-  #---------------------------------------------------------------------------------------------------------
+  def gamepad_connected(index)
+
+  end
+
+  def gamepad_disconnected(index)
+
+  end
+
   def controls
     return $controls
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Get the current network session socket between two separate synced network services based on current mode.
   def current_session()
-    case @@service_mode
+    case @service_mode
     when :tcp_server
       return nil if @server.nil?
       return @server.session
@@ -169,6 +202,16 @@ class ApplicationWindow < Gosu::Window
     else # :offline
       return nil
     end
+  end
+  
+  #---------------------------------------------------------------------------------------------------------
+  # Application window focus status from Operating System.
+  def gain_focus
+
+  end
+
+  def lose_focus
+
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -192,8 +235,9 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Get the network service the current application mode is set to operate in.
   def network_service()
-    case @@service_mode
+    case @service_mode
     when :tcp_server
       return @server
     when :tcp_client
@@ -208,7 +252,7 @@ class ApplicationWindow < Gosu::Window
   def send_socket_data(data)
     return nil if network_service().nil?
     return nil if current_session().nil?    
-    case @@service_mode
+    case @service_mode
     when :tcp_server
       case data
       when TCPsession::Package
@@ -239,21 +283,13 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # Check what running network mode status is for the application.
   def get_service_mode()
-    return @@service_mode
+    return @service_mode
   end
 
   #---------------------------------------------------------------------------------------------------------
-  def resizable?
-    return true
-  end
-
-  #---------------------------------------------------------------------------------------------------------
-  def needs_cursor?
-    return true
-  end
-
-  #---------------------------------------------------------------------------------------------------------
+  # Called when the application was shutdown by normal operation means.
   def close()
     Logger.warn("ApplicationWindow", "Closing application window.")
     shutdown_network()
@@ -262,6 +298,7 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
+  # If has the chance, will graciously shut down by informing all the listening clients.
   def shutdown_network()
     service = network_service()
     unless service.nil?
@@ -280,11 +317,6 @@ class ApplicationWindow < Gosu::Window
   end
 
   #---------------------------------------------------------------------------------------------------------
-  def font
-    return @@font
-  end
-
-  #---------------------------------------------------------------------------------------------------------
   # If taking advantage of the Logger module, log strings can be shared into the GUI experience.
   def logger_write(string_msg = "")
     send_data_into_state(string_msg)
@@ -293,15 +325,15 @@ class ApplicationWindow < Gosu::Window
 
   #---------------------------------------------------------------------------------------------------------
   def send_data_into_state(data)
-    return false if @@application_state.nil?
-    @@application_state.receive_network_data(data)
+    return false if @application_state.nil?
+    @application_state.receive_network_data(data)
     return true
   end
 
   #---------------------------------------------------------------------------------------------------------
   def set_app_state(new_state)
-    @@application_state.destroy unless @@application_state.nil?
-    @@application_state = new_state
+    @application_state.destroy unless @application_state.nil?
+    @application_state = new_state
   end
 
   #---------------------------------------------------------------------------------------------------------
@@ -310,7 +342,7 @@ class ApplicationWindow < Gosu::Window
   def update()
     return if disposed?
     # update the manager state and shared input controls
-    @@application_state.update unless @@application_state.nil?
+    @application_state.update unless @application_state.nil?
     $controls.update() unless $controls.nil?
   end
 
@@ -319,8 +351,8 @@ class ApplicationWindow < Gosu::Window
   # provides the states for GarbageCollection in a simpler fashion. This also provides a way of changing states
   # with ease, so if a state is a WorldMap or a Menu this transition/interaction can be handled by the Application.
   def draw()
-    @@font.draw_text("FPS: #{Gosu.fps}", 16, 4, 0, 1, 1, 0xFF_ffffff)
-    @@application_state.draw unless @@application_state.nil?
+    @font.draw_text("FPS: #{Gosu.fps}", 16, 4, 0, 1, 1, 0xFF_ffffff)
+    @application_state.draw unless @application_state.nil?
   end
 
   #---------------------------------------------------------------------------------------------------------

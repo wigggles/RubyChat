@@ -7,34 +7,38 @@ class GUI::Button < GUI::Component
   attr_accessor :hcolor, :text
   #---------------------------------------------------------------------------------------------------------
   #D: Creates the Kernel Class (klass) instance.
-  def initialize(options = {})
-    super(options)
-    @align = options[:align] || :left # How to position based off x and y location.
+  def initialize(
+    options = {},
+    text: '',
+    font_size: 24,
+    color: Gosu::Color.argb(0xff_6633ff),
+    hcolor: Gosu::Color.argb(0xff_cc3355),
+    **supers # send the rest of the keyword arguments into parent constructor klass
+  ); super(supers.merge!(options))
+    @align = supers[:align] # How to position based off x and y location.
     # using the text with out passing :width can automatically set @width
-    @text = options[:text] || ''
-    font_size = options[:font_size] || 24
+    @text = text
     @font = Gosu::Font.new($application, "verdana", font_size)
     @box_edge_buf = font_size #DV Add a little to the box so not touching text on edges.
     if @width <= 0
-      @width  = options[:width]  || @font.text_width(@text).round()
+      @width  = supers[:width]  || @font.text_width(@text).round()
       @width += (@box_edge_buf * 2)
     end
     if @height <= 0
-      @height = options[:height] || font_size * 2
+      @height = supers[:height] || font_size * 2
     end
     # set working colors
-    color = options[:color] || [Gosu::Color.argb(0xff_6633ff), Gosu::Color.argb(0xff_cc3355)]
-    @color  = color[0] #DV Red, Green, Blue, Alpha (00, 00, 00, 00) (ff, ff, ff, ff)
-    @hcolor = color[1] #DV Mouse over box hover color
+    @color  = color  #DV Red, Green, Blue, Alpha (00, 00, 00, 00) (ff, ff, ff, ff)
+    @hcolor = hcolor #DV Mouse over box hover color
     @is_highlighted = false
-    @is_depresed = false
-    @has_actioned = false
+    @is_depresed    = false
+    @has_actioned   = false
     # setup call method for action
     if @owner.nil?
       print("Error with Button no owner, skipping")
       return nil
     end
-    @action = options[:action] || nil
+    @action = supers[:action]
     @action_timeout = GUI::Button::ACTION_TIMEOUT
     is_ready()
   end
@@ -78,9 +82,10 @@ class GUI::Button < GUI::Component
   end
   #---------------------------------------------------------------------------------------------------------
   def draw_background(screen_x, screen_y, color)
-    @bgimg = GUI::BlobDraw.get_image({
-      of: :round_rect, width: @width, height: @height, radius: 16, outlined: true
-    }) if @bgimg.nil?
+    @bgimg = GUI::BlobDraw.get_image(
+      of_type: :round_rect, width: @width, height: @height,
+      radius: 10, outlined: true, thickness: 4
+    ) if @bgimg.nil?
     @bgimg.draw(screen_x, screen_y, @z, 1.0, 1.0, color)
   end
   #---------------------------------------------------------------------------------------------------------

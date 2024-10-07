@@ -20,8 +20,9 @@ module Configuration
 
   #--------------------------------------
   # GUI mode settings:
-  CLI_MODE   = false  # Use command line interface, or 'false' for Gosu GUI.
-  FULL_SCREEN = false
+  CLI_MODE    = false  # Use command line interface, or 'false' for Gosu GUI.
+  FULL_SCREEN = false  # Start in Fullscreen mode, disables RESIZABLE setting.
+  RESIZABLE   = true   # Can resize the application window.
   module ResolutionModes
     DESK_HDMED = [1920, 1080]
     DESK_HDSML = [1366,  768]
@@ -33,8 +34,10 @@ module Configuration
     MOBILE_SML = [ 360,  800]
     MOBILE_MIN = [ 375,  667]
   end
-  # To change resolutions just swap out the below constant.
-  SCREEN_WIDTH, SCREEN_HEIGHT = ResolutionModes::DESK_MED
+  # To change startup resolution just swap out the below constant.
+  INITIAL_SCREEN_WIDTH, INITIAL_SCREEN_HEIGHT = ResolutionModes::DESK_MED
+
+  GOSU_UPDATE_MS = 16.666666 # The milliseconds between Gosu::Window.update calls.
 
   #---------------------------------------------------------------------------------------------------------
   # Below is a list of publicly known 3rd party remote IP APIs.

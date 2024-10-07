@@ -5,9 +5,9 @@ class LicensesState
   #---------------------------------------------------------------------------------------------------------
   # Create klass object.
   def initialize()
-    @textWall = GUI::TextWall.new({
+    @textWall = GUI::TextWall.new(
       text: Gosu::LICENSES
-    })
+    )
   end
   #---------------------------------------------------------------------------------------------------------
   #D: Update loop, where things get up to date!

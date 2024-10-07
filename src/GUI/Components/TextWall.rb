@@ -5,10 +5,12 @@ class GUI::TextWall < GUI::Component
   attr_accessor :text, :font
   #---------------------------------------------------------------------------------------------------------
   #D: Creates the Kernel Class (klass) instance.
-  def initialize(options = {})
-    super()
-    @text = options[:text] || ''
-    font_size = options[:font_size] || 24
+  def initialize(
+    text: '',
+    font_size: 24,
+    **supers # send the rest of the keyword arguments into parent constructor klass
+  ); super(supers)
+    @text = text
     #@font = Gosu::Font.new($application, "verdana", font_size)
     @text_image = Gosu::Image.from_markup(@text, font_size, width: @width)
   end
@@ -22,7 +24,7 @@ class GUI::TextWall < GUI::Component
   # Draw to screen.
   def draw
     return unless super()
-    ##@font.draw_text(@text, @x, @y, @z+1, 1, 1, 0xFF_ffffff)
+    #@font.draw_text(@text, @x, @y, @z+1, 1, 1, 0xFF_ffffff)
     @text_image.draw(@x, @y, @z)
   end
   #---------------------------------------------------------------------------------------------------------

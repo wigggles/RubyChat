@@ -9,75 +9,84 @@ module GUI::BlobDraw
   FILL_COLOR    = 0xFF_cccccc
   #---------------------------------------------------------------------------------------------------------
   # Fetch an image that is known how to be drawn.
-  def self.get_image(opt = {})
-    opt[:width]     = opt[:width]      ||   50        # Image width.
-    opt[:height]    = opt[:height]     ||   50        # Image height.
-    opt[:of_type]   = opt[:of]         || :circle     # What shape/item to draw.
-    opt[:radius]    = opt[:radius]     ||   50        # How round to draw edges.
-    opt[:outlined]  = opt[:outlined]   ||  false      # Show outline when filled.
-    opt[:outline]   = opt[:outline]    ||  false      # Only outline, do not fill.
-    opt[:thickness] = opt[:thickness]  ||    4        # Outline size.
+  def self.get_image(
+    of_type: :circle,
+    width: 50,
+    height: 50,
+    radius: 50,
+    outlined: false,
+    outline: false,
+    thickness: 4
+  )
     #--------------------------------------
     # only works with even blobs, so that gets checked and patched here
-    opt[:width]  += 1 if (opt[:width]  % 2) != 0
-    opt[:height] += 1 if (opt[:height] % 2) != 0
+    width  += 1 if (width  % 2) != 0
+    height += 1 if (height % 2) != 0
     #--------------------------------------
     # after looking at the opt, get the requested blob for drawing
-    case opt[:of_type]
+    case of_type
     when :rectangle
-      if opt[:outline]
-        return Gosu::Image.new(GUI::BlobDraw::Rectangle.new(opt))
-      elsif opt[:outlined]
-        outline = Gosu::Image.new(GUI::BlobDraw::Rectangle.new(opt))
-        opt[:width]  -= (opt[:thickness] * 2)
-        opt[:height] -= (opt[:thickness] * 2)
-        fill = Gosu::Image.new(GUI::BlobDraw::Rectangle.new(opt))
-        opt[:width]  += (opt[:thickness] * 2)
-        opt[:height] += (opt[:thickness] * 2)
-        image_blob ||= Gosu::render(opt[:width], opt[:height], retro: true) do 
+      if outline
+        return Gosu::Image.new(GUI::BlobDraw::Rectangle.new(
+          width, height, outline: true, thickness: thickness
+        ))
+      elsif outlined
+        outline = Gosu::Image.new(GUI::BlobDraw::Rectangle.new(
+          width, height, outline: true, thickness: thickness
+        ))
+        width  -= (thickness * 2)
+        height -= (thickness * 2)
+        fill = Gosu::Image.new(GUI::BlobDraw::Rectangle.new(width, height))
+        width  += (thickness * 2)
+        height += (thickness * 2)
+        image_blob ||= Gosu::render(width, height, retro: true) do 
+          fill.draw(thickness, thickness, 0, 1.0, 1.0, GUI::BlobDraw::FILL_COLOR)
           outline.draw(0, 0, 0, 1.0, 1.0, GUI::BlobDraw::OUTLINE_COLOR)
-          fill.draw(opt[:thickness], opt[:thickness], 0, 1.0, 1.0, GUI::BlobDraw::FILL_COLOR)
         end
         return image_blob
       else
-        return Gosu::Image.new(GUI::BlobDraw::Rectangle.new(opt))
+        return Gosu::Image.new(GUI::BlobDraw::Rectangle.new(width, height))
       end
     #--------------------------------------
     when :round_rect
-      if opt[:outline]
-        return Gosu::Image.new(GUI::BlobDraw::RoundRectangle.new(opt))
-      elsif opt[:outlined]
-        outline = Gosu::Image.new(GUI::BlobDraw::RoundRectangle.new(opt))
-        opt[:width]  -= (opt[:thickness] * 2)
-        opt[:height] -= (opt[:thickness] * 2)
-        fill = Gosu::Image.new(GUI::BlobDraw::RoundRectangle.new(opt))
-        opt[:width]  += (opt[:thickness] * 2)
-        opt[:height] += (opt[:thickness] * 2)
-        image_blob ||= Gosu::render(opt[:width], opt[:height], retro: true) do 
+      if outline
+        return Gosu::Image.new(GUI::BlobDraw::RoundRectangle.new(
+          width, height, radius: radius, outline: true, thickness: thickness
+        ))
+      elsif outlined
+        outline = Gosu::Image.new(GUI::BlobDraw::RoundRectangle.new(
+          width, height, radius: radius, outline: true, thickness: thickness
+        ))
+        fill = Gosu::Image.new(GUI::BlobDraw::RoundRectangle.new(
+          width - thickness, height - thickness, radius: radius
+        ))
+        image_blob ||= Gosu::render(width, height, retro: true) do
+          fill.draw(thickness / 2, thickness / 2, 0, 1.0, 1.0, GUI::BlobDraw::FILL_COLOR)
           outline.draw(0, 0, 0, 1.0, 1.0, GUI::BlobDraw::OUTLINE_COLOR)
-          fill.draw(opt[:thickness], opt[:thickness], 0, 1.0, 1.0, GUI::BlobDraw::FILL_COLOR)
         end
         return image_blob
       else
-        return Gosu::Image.new(GUI::BlobDraw::RoundRectangle.new(opt))
+        return Gosu::Image.new(GUI::BlobDraw::RoundRectangle.new(width, height, radius: radius))
       end
     #--------------------------------------
     when :circle
-      opt[:width]  = opt[:radius] * 2
-      opt[:height] = opt[:radius] * 2
-      if opt[:outline]
-        return Gosu::Image.new(GUI::BlobDraw::Circle.new(opt))
-      elsif opt[:outlined]
-        outline = Gosu::Image.new(GUI::BlobDraw::Circle.new(opt))
-        opt[:radius] -= opt[:thickness]
-        fill = Gosu::Image.new(GUI::BlobDraw::Circle.new(opt))
-        image_blob ||= Gosu::render(opt[:width], opt[:height], retro: true) do 
+      if outline
+        return Gosu::Image.new(GUI::BlobDraw::Circle.new(
+          radius, outline: true, thickness: thickness
+        ))
+      elsif outlined
+        outline = Gosu::Image.new(GUI::BlobDraw::Circle.new(
+          radius, outline: true, thickness: thickness
+        ))
+        half_rad = (thickness / 2)
+        fill = Gosu::Image.new(GUI::BlobDraw::Circle.new(radius - half_rad))
+        image_blob ||= Gosu::render(radius * 2, radius * 2, retro: true) do
+          fill.draw(half_rad, 0, 0, 1.0, 1.0, GUI::BlobDraw::FILL_COLOR)
           outline.draw(0, 0, 0, 1.0, 1.0, GUI::BlobDraw::OUTLINE_COLOR)
-          fill.draw(opt[:thickness], opt[:thickness], 0, 1.0, 1.0, GUI::BlobDraw::FILL_COLOR)
         end
         return image_blob
       else
-        return Gosu::Image.new(GUI::BlobDraw::Circle.new(opt))
+        return Gosu::Image.new(GUI::BlobDraw::Circle.new(radius))
       end
     else
       Logger.error("BlobDraw", "Does not know how to draw a (#{of_type})",
@@ -89,14 +98,14 @@ module GUI::BlobDraw
   # How to draw a rectangle with square corners.
   class Rectangle
     attr_reader :columns, :rows
-    def initialize(opt = {})
-      @columns = opt[:width]
-      @rows    = opt[:height]
+    def initialize(width, height, outline: false, thickness: 4)
+      @columns = width
+      @rows    = height
       # start drawing
       lower_half = (0...(@rows / 2)).map() { |y|
-        if opt[:outline]
+        if outline
           x = @columns / 2
-          x_skip = y > opt[:thickness] ? opt[:thickness] : x
+          x_skip = (y > thickness ? thickness : x)
           right_half = "#{GUI::BlobDraw::CP * (x - x_skip)}#{GUI::BlobDraw::SP * x_skip}"
         else
           right_half = "#{GUI::BlobDraw::SP * (@columns / 2)}"
@@ -112,17 +121,17 @@ module GUI::BlobDraw
   # How to draw a rectangle with rounded corners.
   class RoundRectangle
     attr_reader :columns, :rows
-    def initialize(opt = {})
-      @columns = opt[:width]
-      @rows    = opt[:height]
-      radius   = [[opt[:radius], 2].max(), @rows].min()
+    def initialize(width, height, radius: 12, outline: false, thickness: 4)
+      @columns = width
+      @rows    = height
+      radius   = [[radius, 2].max(), @rows].min()
       # start drawing
       top_half = (0...(@rows / 2)).map() { |y|
         x = @columns / 2
         r = (y < radius ? radius - Math.sqrt((radius ** 2) - ((radius - y) ** 2)).round() : 0)
         r = radius - 2 if r >= radius
-        if opt[:outline]
-          x_skip = y > opt[:thickness] ? opt[:thickness] : x - r
+        if outline
+          x_skip = (y > thickness ? thickness : x - r)
           left_half = "#{GUI::BlobDraw::CP * r}#{GUI::BlobDraw::SP * x_skip}#{GUI::BlobDraw::CP * (x - x_skip - r)}"
         else
           left_half = "#{GUI::BlobDraw::CP * r}#{GUI::BlobDraw::SP * (x - r)}"
@@ -138,22 +147,21 @@ module GUI::BlobDraw
   # How to draw a circle. When drawing an outline only, it wont do it very well tends to have a flat bottom.
   class Circle
     attr_reader :columns, :rows
-    def initialize(opt = {})
-      r = opt[:radius]
-      @columns = @rows = r * 2
+    def initialize(radius = 50, outline: false, thickness: 4)
+      @columns = @rows = radius * 2
       # start drawing
-      lower_half = (0...r).map() { |y|
-        x = Math.sqrt(r ** 2 - y ** 2).round()
-        if opt[:outline]
-          sx = Math.sqrt(r ** 2 - y ** 2).round() - Math.sqrt(opt[:thickness] ** 2).round()
+      lower_half = (0...radius).map() { |y|
+        x = Math.sqrt(radius ** 2 - y ** 2).round()
+        if outline
+          sx = Math.sqrt(radius ** 2 - y ** 2).round() - Math.sqrt(thickness ** 2).round()
           sx = 0 if sx < 0
-          if y >= r - opt[:thickness]
-            right_half = "#{GUI::BlobDraw::SP * x}#{GUI::BlobDraw::CP * (r - x)}"
+          if y >= radius - thickness
+            right_half = "#{GUI::BlobDraw::SP * x}#{GUI::BlobDraw::CP * (radius - x)}"
           else
-            right_half = "#{GUI::BlobDraw::CP * sx}#{GUI::BlobDraw::SP * (x - sx)}#{GUI::BlobDraw::CP * (r - x)}"
+            right_half = "#{GUI::BlobDraw::CP * sx}#{GUI::BlobDraw::SP * (x - sx)}#{GUI::BlobDraw::CP * (radius - x)}"
           end
         else
-          right_half = "#{GUI::BlobDraw::SP * x}#{GUI::BlobDraw::CP * (r - x)}"
+          right_half = "#{GUI::BlobDraw::SP * x}#{GUI::BlobDraw::CP * (radius - x)}"
         end
         right_half.reverse + right_half
       }.join()
