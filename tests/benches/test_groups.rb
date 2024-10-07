@@ -87,15 +87,27 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   def test_class_calls
     prep_new_test("Class Calls")
-    @test_length = 13
+    @test_length = 16
     BenchTests.showText("  Math:\n")
     BenchTests.showText(run_bench(BT::CALL_METHOD::MATH_local,     1_000_000))
     BenchTests.showText(run_bench(BT::CALL_METHOD::MATH_module,    1_000_000))
     BenchTests.showText(run_bench(BT::CALL_METHOD::MATH_class,     1_000_000))
-    BenchTests.showText("\n  Methods:\n")
-    BenchTests.showText(run_bench(BT::CALL_METHOD::METHODS_local,  1_000_000))
-    BenchTests.showText(run_bench(BT::CALL_METHOD::METHODS_module, 1_000_000))
-    BenchTests.showText(run_bench(BT::CALL_METHOD::METHODS_class,  1_000_000))
+    BenchTests.showText("\n  List Methods:\n")
+    BenchTests.showText(run_bench(BT::CALL_METHOD::METHODS_local,  10_000))
+    BenchTests.showText(run_bench(BT::CALL_METHOD::METHODS_module, 10_000))
+    BenchTests.showText(run_bench(BT::CALL_METHOD::METHODS_class,  10_000))
+    BenchTests.showText("\n  Class Arguments:\n")
+    BenchTests.showText(run_bench(BT::CALL_METHOD::ARGUMENTS_CLASS_strict,  1_000_000))
+    BenchTests.showText(run_bench(BT::CALL_METHOD::ARGUMENTS_CLASS_array,   1_000_000))
+    BenchTests.showText(run_bench(BT::CALL_METHOD::ARGUMENTS_CLASS_symbol,  1_000_000))
+    BenchTests.showText(run_bench(BT::CALL_METHOD::ARGUMENTS_CLASS_value,   1_000_000))
+    BenchTests.showText(run_bench(BT::CALL_METHOD::ARGUMENTS_CLASS_hash,    1_000_000))
+    BenchTests.showText("\n  Module Arguments:\n")
+    BenchTests.showText(run_bench(BT::CALL_METHOD::ARGUMENTS_MODULE_strict, 1_000_000))
+    BenchTests.showText(run_bench(BT::CALL_METHOD::ARGUMENTS_MODULE_array,  1_000_000))
+    BenchTests.showText(run_bench(BT::CALL_METHOD::ARGUMENTS_MODULE_symbol, 1_000_000))
+    BenchTests.showText(run_bench(BT::CALL_METHOD::ARGUMENTS_MODULE_value,  1_000_000))
+    BenchTests.showText(run_bench(BT::CALL_METHOD::ARGUMENTS_MODULE_hash,   1_000_000))
     BenchTests.display_footer()
     return true # if called using GUI.action() call_back
   end
@@ -125,7 +137,7 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   def test_numeric_functions
     prep_new_test("Numeric Operations")
-    @test_length = 3
+    @test_length = 7
     BenchTests.showText("  Range Clamping:\n")
     BenchTests.showText(run_bench(BT::NUMERIC::RANGE_CLAMP_if,         1_000_000))
     BenchTests.showText(run_bench(BT::NUMERIC::RANGE_CLAMP_ternary,    1_000_000))
@@ -143,7 +155,7 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   def test_TCP_NETWORK
     prep_new_test("TCP network Operations")
-    @test_length = 2
+    @test_length = 6
     BenchTests.showText("  Package byte String data:\n")
     BenchTests.showText(run_bench(BT::TCP_NETWORK::REF_ID_integer,        500_000))
     BenchTests.showText(run_bench(BT::TCP_NETWORK::REF_ID_string,         500_000))

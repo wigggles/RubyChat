@@ -177,6 +177,7 @@ class BenchTests
   #D: Speed tests between different call pointer types.
   #---------------------------------------------------------------------------------------------------------
   def benches_call_method(index, run_for)
+    stress_class = StressAux_Class.new()
     case index
     when BT::CALL_METHOD::MATH_local
       h = 'local'; s = Benchmark.measure{run_for.times { |nr|
@@ -206,9 +207,68 @@ class BenchTests
         class_called.methods
       }}
       class_called = nil
+    when BT::CALL_METHOD::ARGUMENTS_CLASS_strict
+      h = 'type- strict'; s = Benchmark.measure{run_for.times { |nr|
+        stress_class.arguments_strict(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+      }}
+    when BT::CALL_METHOD::ARGUMENTS_CLASS_array
+      h = 'type- array'; s = Benchmark.measure{run_for.times { |nr|
+        stress_class.arguments_array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+      }}
+    when BT::CALL_METHOD::ARGUMENTS_CLASS_symbol
+      h = 'type- symbol'; s = Benchmark.measure{run_for.times { |nr|
+        stress_class.arguments_symbol(
+          one: 1, two: 2, three: 3, four: 4, five: 5,
+          six: 6, seven: 7, eight: 8, nine: 9, ten: 10
+        )
+      }}
+    when BT::CALL_METHOD::ARGUMENTS_CLASS_value
+      h = 'type- hash'; s = Benchmark.measure{run_for.times { |nr|
+        stress_class.arguments_value({
+          one: 1, two: 2, three: 3, four: 4, five: 5,
+          six: 6, seven: 7, eight: 8, nine: 9, ten: 10
+        })
+      }}
+    when BT::CALL_METHOD::ARGUMENTS_CLASS_hash
+      h = 'type- value'; s = Benchmark.measure{run_for.times { |nr|
+        stress_class.arguments_hash(
+          one: 1, two: 2, three: 3, four: 4, five: 5,
+          six: 6, seven: 7, eight: 8, nine: 9, ten: 10
+        )
+      }}
+    when BT::CALL_METHOD::ARGUMENTS_MODULE_strict
+      h = 'type- strict'; s = Benchmark.measure{run_for.times { |nr|
+        StressAux_Module.arguments_strict(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+      }}
+    when BT::CALL_METHOD::ARGUMENTS_MODULE_array
+      h = 'type- array'; s = Benchmark.measure{run_for.times { |nr|
+        StressAux_Module.arguments_array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+      }}
+    when BT::CALL_METHOD::ARGUMENTS_MODULE_symbol
+      h = 'type- symbol'; s = Benchmark.measure{run_for.times { |nr|
+        StressAux_Module.arguments_symbol(
+          one: 1, two: 2, three: 3, four: 4, five: 5,
+          six: 6, seven: 7, eight: 8, nine: 9, ten: 10
+        )
+      }}
+    when BT::CALL_METHOD::ARGUMENTS_MODULE_value
+      h = 'type- hash'; s = Benchmark.measure{run_for.times { |nr|
+        StressAux_Module.arguments_value({
+          one: 1, two: 2, three: 3, four: 4, five: 5,
+          six: 6, seven: 7, eight: 8, nine: 9, ten: 10
+        })
+      }}
+    when BT::CALL_METHOD::ARGUMENTS_MODULE_hash
+      h = 'type- value'; s = Benchmark.measure{run_for.times { |nr|
+        StressAux_Module.arguments_hash(
+          one: 1, two: 2, three: 3, four: 4, five: 5,
+          six: 6, seven: 7, eight: 8, nine: 9, ten: 10
+        )
+      }}
     else
-      s = "Unknown bench mark run for 'Array v. Hash' index(#{index})\n"
+      s = "Unknown bench mark run for 'Class Calls' index(#{index})\n"
     end
+    stress_class = nil
     return "#{h}\t(#{run_for})\t#{s}" # benchmark adds \n return from s
   end
   #---------------------------------------------------------------------------------------------------------

@@ -98,11 +98,11 @@ class BenchTests
   def run(group)
     case group
     when BT::HASH_VS_ARRAY::Group_Name  then test_arrayhash_speed()
-    when BT::RND_NUMBER::Group_Name     then test_array_speeds()
-    when BT::ARRAY_SPEED::Group_Name    then test_class_calls()
+    when BT::RND_NUMBER::Group_Name     then test_random_number_gen()
+    when BT::ARRAY_SPEED::Group_Name    then test_array_speeds()
     when BT::VARIABLE_SPEED::Group_Name then test_variable_speeds()
     when BT::INPUT_SPEED::Group_Name    then test_input_speeds()
-    when BT::CALL_METHOD::Group_Name    then test_random_number_gen()
+    when BT::CALL_METHOD::Group_Name    then test_class_calls()
     when BT::NUMERIC::Group_Name        then test_numeric_functions()
     when BT::TCP_NETWORK::Group_Name    then test_TCP_NETWORK()
     when 'quick_bench' then quick_bench()
@@ -111,7 +111,7 @@ class BenchTests
     end
   end
   #---------------------------------------------------------------------------------------------------------
-  #D: Run all benches availabel.
+  #D: Run all benches available.
   #---------------------------------------------------------------------------------------------------------
   def run_all()
     test_arrayhash_speed()
@@ -168,11 +168,32 @@ end
 
 #===============================================================================================================================
 # Misc classes used in stress testing. (Things that take word to apply artificial loads and things of this nature.)
+# Arguments can also be wild cards like: (*args) as type Array and (**args) as type Hash.
 #===============================================================================================================================
 class StressAux_Class
   def mathspeed(x, y)
     int = x ^ y
     return int
+  end
+
+  def arguments_strict(one, two, three, four, five, six, seven, eight, nine, ten)
+
+  end
+
+  def arguments_array(*options)
+
+  end
+
+  def arguments_symbol(one:, two:, three:, four:, five:, six:, seven:, eight:, nine:, ten:)
+    
+  end
+
+  def arguments_hash(**options)
+
+  end
+
+  def arguments_value(options = {})
+
   end
 end
 #---------------------------------------------------------------------------------------------------------
@@ -180,6 +201,26 @@ module StressAux_Module
   def self.mathspeed(x, y)
     int = x ^ y
     return int
+  end
+
+  def self.arguments_strict(one, two, three, four, five, six, seven, eight, nine, ten)
+
+  end
+
+  def self.arguments_array(*options)
+
+  end
+
+  def self.arguments_symbol(one:, two:, three:, four:, five:, six:, seven:, eight:, nine:, ten:)
+
+  end
+
+  def self.arguments_hash(**options)
+
+  end
+
+  def self.arguments_value(options = {})
+
   end
 end
 

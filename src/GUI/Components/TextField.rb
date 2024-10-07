@@ -6,7 +6,6 @@
 #===============================================================================================================================
 class GUI::TextField < GUI::Component
   BLINK_SPEED = 20
-  REPEAT_PRESS_TIMEOUT = 0
   MAX_LENGTH = 42 # 128
   SELECTION_COLOR = 0xcc_0000ff
   CARET_COLOR = 0xff_ffffff
@@ -23,7 +22,6 @@ class GUI::TextField < GUI::Component
     @box_edge_buf = font_size / 2 #DV Add a little to the box so not touching text on edges.
     @is_active = true  #DV Allow the text field to be changed?
     @pulse = [0, true] #DV Used to blink the text position.
-    @press_repeat = REPEAT_PRESS_TIMEOUT
     @bgcolor = 0xff_353535 #DV Background color used to fill viewing Rect.
     # setup call method for action
     if @owner.nil?
@@ -136,6 +134,7 @@ class GUI::TextField < GUI::Component
     if $application.text_input == @textInput
       $application.text_input = nil
     end
+    @textInput = nil
     super()
   end
 end
