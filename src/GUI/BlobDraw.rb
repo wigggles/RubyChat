@@ -1,5 +1,5 @@
 #===============================================================================================================================
-# !!!  BlobDraw.rb |  Draw extended shapes and cache the pixles into an image blob for drawing later.
+# !!!  BlobDraw.rb |  Draw extended shapes and cache the pixels into an image blob for drawing later.
 #===============================================================================================================================
 module GUI::BlobDraw
   SP = 0xff.chr() # Solid Pixel

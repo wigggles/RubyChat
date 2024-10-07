@@ -5,7 +5,7 @@ class ClientPool
   # The REF ID size is heavily dependent on the configuration for the string packaging in a server message.
   # That configuration for packaging is done in the TCPsession::Package module.
   REF_ID_SIZE = 10 # Should match the generated ref_id length. (10 for 'unclamped' which is currently configured.)
-  # Additional package flags for ariving data types.
+  # Additional package flags for arriving data types.
   module DATAMODE
     ALL_CLIENTS = 0
   end
@@ -154,7 +154,7 @@ class ClientPool
 
   end
   #---------------------------------------------------------------------------------------------------------
-  # Recived a request to sync clients from server session.
+  # Received a request to sync clients from server session.
   def sync_requested(package)
     sync_data = package.expand_client_data()
     Logger.debug("ClientPool", "Local has received request to sync with client pool."+
@@ -162,7 +162,7 @@ class ClientPool
       "\nclient_data: (#{sync_data.inspect})",
       tags: [:Network, :Client]
     )
-    # update the local client list with the recived descriptions
+    # update the local client list with the received descriptions
     if sync_data.is_a?(Array)
       case sync_data[1]
       when Array

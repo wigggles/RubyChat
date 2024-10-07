@@ -6,7 +6,7 @@ class InputControls
 =begin
 Keeps track of all User defined input mappings and current button/key states for Input related statements.
 --------------------------------------       --------------------------------------       --------------------------------------
-         Available Control Schemes:                           |                Tack Buttons: *For an xbox 360 Controller*     
+         Availabel Control Schemes:                           |                Tack Buttons: *For an xbox 360 Controller*     
   --------------------------------------                      |                             
            Menu Navigation                                    |                             
             :menu_up                                          |                             gp_0 = A

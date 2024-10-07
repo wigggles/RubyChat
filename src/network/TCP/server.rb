@@ -115,7 +115,7 @@ class TCPserver
       while incoming_data_byteString = client_session.await_data_msg()
         case incoming_data_byteString
         when TCPsession::Package
-          # to make things more managable, the byte string data is expanded into a class Object
+          # to make things more manageable, the byte string data is expanded into a class Object
           # this data can be verified if configured correctly to add a layer of error netting
           # as well as additional featuring when handling the data with other Objects
           if incoming_data_byteString.has_error?
@@ -234,7 +234,7 @@ class TCPserver
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # How a new client session arives and is added into the server's pool to be synced later with client swimmers.
+  # How a new client session arrives and is added into the server's pool to be synced later with client swimmers.
   def handle_cannonball(client_socket)
     client_session = TCPsession.new(client_socket)
     Logger.info("TCPserver", "New client ref_id:(#{client_session.description.ref_id}) wants to swim in the pool."+
@@ -242,9 +242,9 @@ class TCPserver
       "\nsocket: (#{client_socket.inspect})",
       tags: [:Network, :Client]
     )
-    # syncronize the client's local session's Client ref_id with what the server reports them as being localy to it.
+    # synchronize the client's local session's Client ref_id with what the server reports them as being locally to it.
     # this means the local ref_id the client generated will be thrown out, and a new ref_id for the Server's client pool
-    # Client objects will be syncronized to that clients socket. If the server receives a message from a client whos
+    # Client objects will be synchronize to that clients socket. If the server receives a message from a client who's
     # ref_id isn't in the pool, it can check for that and many more kinds of things.
     Logger.debug("TCPserver", "Reporting to client splash ref_id:(#{client_session.description.ref_id}).",
       tags: [:Network, :Client]

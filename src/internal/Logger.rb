@@ -79,7 +79,7 @@ module Logger
   @@paused = false
   #---------------------------------------------------------------------------------------------------------
   # For most part all logging levels behave the same when called.
-  def self.handle(level, lable, msg, tags: [])
+  def self.handle(level, label, msg, tags: [])
     if Level::CONFIG[level][:to_console]
       # there can be a lot of log information, provide tag filters
       if Logger::ENABLE_TAGS && Logger::Level::CONFIG[level][:use_flags] && tags.size > 0
@@ -99,16 +99,16 @@ module Logger
           print("[#{stamp}] ")
         end
       end
-      # how to display the text in the conosole
+      # how to display the text in the console
       if Logger::USE_CONSOLE_COLORS
         flag_color = Level::CONFIG[level][:use_color]
         if flag_color
-          puts("#{flag_color}#{lable}-> #{TermColor::NONE}#{msg}")
+          puts("#{flag_color}#{label}-> #{TermColor::NONE}#{msg}")
         else
-          puts("#{TermColor::NONE}#{lable}-> #{msg}")
+          puts("#{TermColor::NONE}#{label}-> #{msg}")
         end
       else
-        puts("#{lable}-> #{msg}")
+        puts("#{label}-> #{msg}")
       end
       # if tracing where Logger was called from, include that information
       if Logger::USE_CALL_TRACING && Level::CONFIG[level][:show_location]
@@ -116,36 +116,36 @@ module Logger
       end
     end
     # if there is a GUI write into that as well
-    self.write_to_gui(lable, msg) if Level::CONFIG[level][:to_gui]
+    self.write_to_gui(label, msg) if Level::CONFIG[level][:to_gui]
     return true
   end
   #---------------------------------------------------------------------------------------------------------
   def self.error(title = "", msg = "", tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::ERROR
-    lable = "ERROR: (#{title})"
-    self.handle(Level::ERROR, lable, msg, tags: tags)
+    label = "ERROR: (#{title})"
+    self.handle(Level::ERROR, label, msg, tags: tags)
   end
   #---------------------------------------------------------------------------------------------------------
   def self.warn(title = "", msg = "", tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::WARN
-    lable = "WARN: (#{title})"
-    self.handle(Level::WARN, lable, msg, tags: tags)
+    label = "WARN: (#{title})"
+    self.handle(Level::WARN, label, msg, tags: tags)
   end
   #---------------------------------------------------------------------------------------------------------
   def self.debug(title = "", msg = "", tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::DEBUG
-    lable = "DEBUG: (#{title})"
-    self.handle(Level::DEBUG, lable, msg, tags: tags)
+    label = "DEBUG: (#{title})"
+    self.handle(Level::DEBUG, label, msg, tags: tags)
   end
   #---------------------------------------------------------------------------------------------------------
   def self.info(title = "", msg = "", tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::INFO
-    lable = "INFO: (#{title})"
-    self.handle(Level::INFO, lable, msg, tags: tags)
+    label = "INFO: (#{title})"
+    self.handle(Level::INFO, label, msg, tags: tags)
   end
   #---------------------------------------------------------------------------------------------------------
   # Show where the Logger call originated from.
@@ -164,10 +164,10 @@ module Logger
   end
   #---------------------------------------------------------------------------------------------------------
   # Make a request to send a passed string to an ApplicationWindow where it might know how to display it there.
-  def self.write_to_gui(lable = "", msg = "")
+  def self.write_to_gui(label = "", msg = "")
     return if @@paused
     return false if @@bound_ApplicationWindow.nil?
-    unless @@bound_ApplicationWindow.send(:logger_write, "#{lable}-> #{msg}")
+    unless @@bound_ApplicationWindow.send(:logger_write, "#{label}-> #{msg}")
       self.error("Logger", "There is a bound Window but no method to write into.")
       return false
     end
@@ -175,7 +175,7 @@ module Logger
   end
   #---------------------------------------------------------------------------------------------------------
   # If utilizing an ApplicationWindow in a GUI mode, these messages can also be logged to a GUI Component
-  # given there is an active state that will process recieving these logging messages.
+  # given there is an active state that will process receiving these logging messages.
   def self.bind_application_window(parent_window)
     case parent_window
     when ApplicationWindow

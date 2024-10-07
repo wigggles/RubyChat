@@ -140,7 +140,7 @@ class TCPclient
       )
       data.set_creation_time()
     else
-      Logger.error("TCPclient", "Attempting to send data type it doesnt recognize. (#{data.class})",
+      Logger.error("TCPclient", "Attempting to send data type it doesn't recognize. (#{data.class})",
         tags: [:Network]
       )
       return nil

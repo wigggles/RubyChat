@@ -20,7 +20,7 @@ module Configuration
 
   #--------------------------------------
   # GUI mode settings:
-  CLI_MODE   = false  # Use comand line interface, or 'false' for Gosu GUI.
+  CLI_MODE   = false  # Use command line interface, or 'false' for Gosu GUI.
   FULL_SCREEN = false
   module ResolutionModes
     DESK_HDMED = [1920, 1080]
@@ -37,7 +37,7 @@ module Configuration
   SCREEN_WIDTH, SCREEN_HEIGHT = ResolutionModes::DESK_MED
 
   #---------------------------------------------------------------------------------------------------------
-  # Below is a list of publically known 3rd party remote IP APIs.
+  # Below is a list of publicly known 3rd party remote IP APIs.
   REMOTE_IP_API = {
     akamai:         "http://whatismyip.akamai.com",
     ipecho:         "http://ipecho.net/plain",
@@ -60,11 +60,11 @@ module Configuration
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Attempt to generate new unique ids, uses a time based float. By defualt this id will be a String hex value.
+  # Attempt to generate new unique ids, uses a time based float. By default this id will be a String hex value.
   # Depending on mode, returns an integer or a long long integer to form a readable string twice the length
-  # displaying the byte values or a packed string value consisting of the bytes raw ansii characters.
-  # These IDs are then used to identify network elements for client data object's refrence. Due to this,
-  # its important to keep track with how many bytes are being packaged for object refrence and generate
+  # displaying the byte values or a packed string value consisting of the bytes raw ansi characters.
+  # These IDs are then used to identify network elements for client data object's reference. Due to this,
+  # its important to keep track with how many bytes are being packaged for object reference and generate
   # an ID matching the session-Package requirements. There is also a chance that the same value is drawn
   # twice or more, you'll need to plan for such cases so IDs stay unique.
   def self.generate_new_ref_id(as_string: true, micro: false, clamp: false, packed: false)
@@ -84,7 +84,7 @@ module Configuration
     # If using a semi human readable id that was generated, it needs to be at least 10 characters.
     if as_string
       # The ID is converted to base 16 hex, doubling its string length. A generalization of a poor probability
-      # can be seen with only using a portion of the total avaliable unique identifiers. Larger values also
+      # can be seen with only using a portion of the total availabel unique identifiers. Larger values also
       # require more bytes to package data when transporting it around.
       new_id = new_id.to_s(16)
       if micro # only grab 3 bytes (6 characters), quite high chances of generating an existing id
@@ -100,10 +100,10 @@ module Configuration
         # Chances roll over in about a day or so.
         new_id = new_id.slice(4...new_id.size)
       end
-      # optionally, convert the hex string from the integer id hex readable string into a raw byte string halfing
+      # optionally, convert the hex string from the integer id hex readable string into a raw byte string halving
       # its size, however this makes the id's not human readable unless they are unpacked later. This packaging
       # requires that there be an even number of characters. One issue to keep in mind when working with raw bytes
-      # is the potential to send them into terminal/console prints/puts and or socket issues whith internal byte codes.
+      # is the potential to send them into terminal/console prints/puts and or socket issues with internal byte codes.
       # *NOTE* This is why sometimes its best to send a string of the bytes represented by 2 characters instead with
       # net traffic or saving to file space when working with raw byte file types.
       new_id = [new_id].pack('H*') if packed

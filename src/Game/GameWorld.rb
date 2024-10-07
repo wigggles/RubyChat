@@ -21,7 +21,7 @@ class GameWorld
     # Used for offsetting the draws for tilemaps/WorldObjects
     @world_x = options[:world_x] || 0 unless @world_x
     @world_y = options[:world_y] || 0 unless @world_y
-    # The lookup sizes for the map's terrian/tilemap data
+    # The lookup sizes for the map's terrain/tilemap data
     @width  = options[:width]  || 0 unless @width
     @height = options[:height] || 0 unless @height
     # Objects with in the world
@@ -55,7 +55,7 @@ class GameWorld
     return nil
   end
   #---------------------------------------------------------------------------------------------------------
-  # Server called syncronizing WorldObject with clients.
+  # Server called synchronizing WorldObject with clients.
   def world_object_change(ref_id = 0, options = {})
     return nil if @@parent_window.nil? || @disposed
     if @@parent_window.is_server?
@@ -70,7 +70,7 @@ class GameWorld
     return nil
   end
   #---------------------------------------------------------------------------------------------------------
-  # Syncronizing GameWorld with clients.
+  # Synchronizing GameWorld with clients.
   def sync_world()
     return nil if @@parent_window.nil? || @disposed
     if @@parent_window.is_server?

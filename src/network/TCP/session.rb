@@ -7,7 +7,7 @@ class TCPsession
   #--------------------------------------
   # Option to send raw byte strings instead of inflating by a factor of two and sending a hex string representation.
   # If you can manage to avoid end-line flags when packaging raw data then you can use raw strings. Otherwise its
-  # recomended you instead send a string of characters to represent these bytes which later can be turned back into
+  # recommended you instead send a string of characters to represent these bytes which later can be turned back into
   # a byte string where ever the network message is received. This means instead of a message of 1024 bytes, you 
   # can send a message of 512 bytes for a maximum payload size.
   USE_RAW_STRING_PACKAGE = false  # ** Default is 'false'.
@@ -19,13 +19,13 @@ class TCPsession
   # Encoding::ASCII_8BIT
 
 #===============================================================================================================================
-# Create the session and manage the packages of byte data strings sent accross connected sockets.
+# Create the session and manage the packages of byte data strings sent across connected sockets.
 #===============================================================================================================================
   def initialize(socket, username = "")
     @creation_time = Time.now.utc()
     @socket = socket
     @client_self = ClientPool::Client.new(username: username, session_pointer: self)
-    # The first initialization will be local client, so that will be bound to the ClientPool to refrence local Client
+    # The first initialization will be local client, so that will be bound to the ClientPool to reference local Client
     # this means that the server will have many sessions with many pools with in them, but only the top pool is filled.
     # on the other end, the client subscribed to the server session only has one pool.
     @client_pool = ClientPool.new(self)
@@ -61,14 +61,14 @@ class TCPsession
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Return a new Package object to load data into in preperation for sending over network session.
+  # Return a new Package object to load data into in preparation for sending over network session.
   def empty_data_package()
     return nil if @client_self.nil?
     return Package.new(nil, @client_self.ref_id)
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Package send data array into a byte string depending on kown types.
+  # Package send data array into a byte string depending on known types.
   def package_data(data_to_send)
     return nil if @client_self.nil?
     new_data_package = Package.new(nil, @client_self.ref_id)
@@ -167,7 +167,7 @@ class TCPsession
   end
 
   #---------------------------------------------------------------------------------------------------------
-  # Try catch error for sending with socket so application doens't crash if it fails to put sting data.
+  # Try catch error for sending with socket so application doesn't crash if it fails to put sting data.
   # All outgoing data flows through here when using a TCPsession object.
   def socket_puts(string)
     Logger.debug("TCPsession", "Socket.puts raw String about to send. (#{string.inspect})",
@@ -189,13 +189,13 @@ class TCPsession
     # attempt to send the message over network
     begin
       if TCPsession::USE_RAW_STRING_PACKAGE
-        # Sending the raw bytes string does have random chance of an inproperly schedualed end-line flag.
+        # Sending the raw bytes string does have random chance of an improperly scheduled end-line flag.
         # An end-line string flag "\n" marks where a socket message stops. I think you can see the issue...
         @socket.puts(string)
       else
         # Convert the string of characters into an array, then pack that array into a string for a hex representation of
         # those byte characters. Doing this prevents the chances of sending bytes used internally for networks. The down
-        # side of doing this is that the message size is halfed as it takes two characters to show a hex value for a byte.
+        # side of doing this is that the message size is halved as it takes two characters to show a hex value for a byte.
         @socket.puts(string.bytes.pack("c*").unpack("H*").first())
       end
     # catch errors and if known to not be critical, handle in a safe way
@@ -224,11 +224,11 @@ class TCPsession
   def await_data_msg(use_package = true)
     return nil if closed?
     begin
-      # when a new message arives, remove the end-line flag of the string received
+      # when a new message arrives, remove the end-line flag of the string received
       response_string = @socket.gets()
       raise SocketClosedException.new() if response_string.nil?
       response_string.chomp() # <- always remove the messages end-line flag.
-      # instead of sending raw bytes in the string message, send a hex string representating these bytes,
+      # instead of sending raw bytes in the string message, send a hex string representing these bytes,
       # this requires an extra step in packaging the data if enabled and also doubles the sending string's size.
       unless TCPsession::USE_RAW_STRING_PACKAGE
         response_string = [response_string].pack('H*')
@@ -256,14 +256,14 @@ class TCPsession
         )
       end
     end
-    # if connection is was still responsive, process their responces
+    # if connection is was still responsive, process their responses
     if response_string
       before_encoding = response_string
       sending_data = response_string.encode(
         TCPsession::FORCE_ENCODING , undef: :replace, invalid: :replace, replace: ""
       )
       if before_encoding.length != response_string.length
-        Logger.error("TCPsession", "When recieving a new string encoding removed some bytes.",
+        Logger.error("TCPsession", "When receiving a new string encoding removed some bytes.",
           tags: [:Network, :Package]
         )
       end

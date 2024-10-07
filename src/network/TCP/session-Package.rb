@@ -13,45 +13,45 @@ class TCPsession
     ARRAY_LENGTH = 5
     # The above defines how to deal with the string stream of data.
     #
-    #    q    | 8-byte integer  | local creation time edian.
+    #    q    | 8-byte integer  | local creation time endian.
     #    Z10  | 10 char bytes   | originating client id. ClientPool::REF_ID_SIZE
-    #    q    | 8-byte integer  | server touched time edian.
+    #    q    | 8-byte integer  | server touched time endian.
     #    n    | 2-byte signed   | mode integer.
-    #    a*   | take whats left | an arbritray length 'message' as a byte string value.
+    #    a*   | take whats left | an arbitrary length 'message' as a byte string value.
     #--------------------------------------
     BYTE_CLIENTSYNC = "n a*"
     CLIENTSYNC_LENGTH = 2
     BYTE_CLIENT = "Z10 Z20"
     CLIENT_BYTES = 30
-    # After using the BYTE_STRING to define common data, perform additonal processing.
+    # After using the BYTE_STRING to define common data, perform additional processing.
     #
     #    n    | 2-byte signed   | type integer.
     #    a*   | take whats left | typically a list of clients.
     #
-    #    Z10  | 10 char bytes   | refrence ID.
+    #    Z10  | 10 char bytes   | reference ID.
     #    Z20  | 20 char bytes   | client username.
     #--------------------------------------
     BYTE_OBJECT = "Z10 L L n a*"
     OBJECT_LENGTH = 5
-    # After using the BYTE_STRING to define common data, perform additonal processing.
+    # After using the BYTE_STRING to define common data, perform additional processing.
     #
-    #    Z10  | 10 char bytes   | object refrence ID.
+    #    Z10  | 10 char bytes   | object reference ID.
     #    L    | 4-byte unsigned | object X world position.
     #    L    | 4-byte unsigned | object Y world position.
     #    n    | 2-byte signed   | type integer.
-    #    a*   | take whats left | an arbritray length byte string.
+    #    a*   | take whats left | an arbitrary length byte string.
     #--------------------------------------
     BYTE_MAPSYNC = "n a*"
     MAPSYNC_LENGTH = 2
-    # After using the BYTE_STRING to define common data, perform additonal processing.
+    # After using the BYTE_STRING to define common data, perform additional processing.
     #
     #    n    | 2-byte signed   | type integer.
-    #    a*   | take whats left | an arbritray length byte string.
+    #    a*   | take whats left | an arbitrary length byte string.
     #--------------------------------------
     # It's crude but effective to count up using constants.
     module DATAMODE
       STRING      = 0    # This mode is the basic one, it just uses the string as a string.
-      CLIENT_SYNC = 1    # This mode is when client data is being syncronized.
+      CLIENT_SYNC = 1    # This mode is when client data is being synchronize.
       OBJECT      = 2    # This mode performs additional variable processing for generic data.
       MAP_SYNC    = 3    # This mode is data from the server that is related to a GameWorld.
     end
@@ -66,7 +66,7 @@ class TCPsession
         @data_mode.is_a?(Integer) &&
         !@data.nil?
       )
-      # check mode against its defined byte formating for defined package DATAMODE types
+      # check mode against its defined byte formatting for defined package DATAMODE types
       case @data_mode
       when DATAMODE::STRING
         return @data.is_a?(String)
@@ -101,8 +101,8 @@ class TCPsession
     def initialize(byte_string = nil, ref_id = nil)
       @ref_id = ref_id || ""
       @arrival_time = nil  # On moment of 'calculate_latency' when package is received. 
-      @latency_server = 0  # Time it took server to send the packaged message till recieving it.
-      @latency_sender = 0  # Time from the originating sender packaging the message till recieving it.
+      @latency_server = 0  # Time it took server to send the packaged message till receiving it.
+      @latency_sender = 0  # Time from the originating sender packaging the message till receiving it.
       @error = false
       @extended_mode = 0
       # If a byte string was provided, construct self from that string.
@@ -124,14 +124,14 @@ class TCPsession
     # Calculate ms latency of the packet based off the server. This is done by following 3 time stamps.
     # When a package is created, its stamped locally (client or server). When the server receives a message,
     # it will 'set_server_time' on the package before sending the data to the active clients. Finally, when
-    # the message is received by the client, this method 'calculate_latency' is called which sets arival time stamp.
-    # The latency of the network packet package and its handeling along the way is calculated in miliseconds.
+    # the message is received by the client, this method 'calculate_latency' is called which sets arrival time stamp.
+    # The latency of the network packet package and its handling along the way is calculated in milliseconds.
     def calculate_latency()
       return nil unless Package::CALCULATE_LATENCY
       begin
         @arrival_time = Time.now.utc()
         # server latency is based on how long it took for the message to reach this client from the server.
-        # individual client latency is based on how long it took from message creation till arivial as a whole.
+        # individual client latency is based on how long it took from message creation till arrival as a whole.
         @latency_server = ((@arrival_time - @srvr_time_stmp) * 1000).round()
         @latency_sender = ((@arrival_time - @srvr_time_stmp) * 1000).round()
         # print additional information about session status

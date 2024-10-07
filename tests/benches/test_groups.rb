@@ -100,6 +100,27 @@ class BenchTests
     return true # if called using GUI.action() call_back
   end
   #---------------------------------------------------------------------------------------------------------
+  #D: Benches variable read/write access speed comparisons.
+  #---------------------------------------------------------------------------------------------------------
+  def test_variable_speeds
+    prep_new_test("Variable Speeds")
+    @test_length = 8
+    BenchTests.showText("\n  Local:\n")
+    BenchTests.showText(run_bench(BT::VARIABLE_SPEED::LOCAL_WRITE,    1_000_000))
+    BenchTests.showText(run_bench(BT::VARIABLE_SPEED::LOCAL_READ,     1_000_000))
+    BenchTests.showText("\n  Instance:\n")
+    BenchTests.showText(run_bench(BT::VARIABLE_SPEED::INSTANCE_WRITE, 1_000_000))
+    BenchTests.showText(run_bench(BT::VARIABLE_SPEED::INSTANCE_READ,  1_000_000))
+    BenchTests.showText("\n  Class:\n")
+    BenchTests.showText(run_bench(BT::VARIABLE_SPEED::CLASS_WRITE,    1_000_000))
+    BenchTests.showText(run_bench(BT::VARIABLE_SPEED::CLASS_READ,     1_000_000))
+    BenchTests.showText("\n  Global:\n")
+    BenchTests.showText(run_bench(BT::VARIABLE_SPEED::GLOBAL_WRITE,   1_000_000))
+    BenchTests.showText(run_bench(BT::VARIABLE_SPEED::GLOBAL_READ,    1_000_000))
+    BenchTests.display_footer()
+    return true # if called using GUI.action() call_back
+  end
+  #---------------------------------------------------------------------------------------------------------
   #D: Run Benchmarks for Numeric functions for speed comparisons.
   #---------------------------------------------------------------------------------------------------------
   def test_numeric_functions
@@ -109,6 +130,11 @@ class BenchTests
     BenchTests.showText(run_bench(BT::NUMERIC::RANGE_CLAMP_if,         1_000_000))
     BenchTests.showText(run_bench(BT::NUMERIC::RANGE_CLAMP_ternary,    1_000_000))
     BenchTests.showText(run_bench(BT::NUMERIC::RANGE_CLAMP_Ruby_clamp, 1_000_000))
+    BenchTests.showText("\n   Inline Math:\n")
+    BenchTests.showText(run_bench(BT::NUMERIC::INCREMENT_plus,         1_000_000))
+    BenchTests.showText(run_bench(BT::NUMERIC::INCREMENT_add,          1_000_000))
+    BenchTests.showText(run_bench(BT::NUMERIC::DECREMENT_minus,        1_000_000))
+    BenchTests.showText(run_bench(BT::NUMERIC::DECREMENT_subtract,     1_000_000))
     BenchTests.display_footer()
     return true # if called using GUI.action() call_back
   end

@@ -14,7 +14,7 @@ class GraphLine
     @disposed = false
     @scale = options[:scale] || 2          # Scale to use when drawing the graph.
     @maxPoints = options[:maxPoints] || 60 # Max number of data points to hold onto, also sets width of graph when drawn.
-    @label = options[:label] || nil # Lable the graph with a header text display.
+    @label = options[:label] || nil # label the graph with a header text display.
     @drawsize = @maxPoints * @scale # The draw size is rectangular, so width and height both share.
     @graph_data = []   # Used to plot data to a graph.
     @graph_last = 0    # last plot that was removed from the graph.
@@ -108,16 +108,4 @@ class GraphLine
   def dispose()
     @disposed = true
   end
-#===============================================================================================================================
 end
-
-#===============================================================================================================================
-# This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either Version 3 of the License, or (at your option) any later version.
-#
-# This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License along with this library; if not, write to the Free 
-# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#===============================================================================================================================

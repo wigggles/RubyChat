@@ -19,7 +19,7 @@ class GUI::Component
     @owner = options[:owner] || nil
   end
   #--------------------------------------
-  #D: Called from child class after initilization.
+  #D: Called from child class after initialization.
   def is_ready
     @disposed = false
     @active = true

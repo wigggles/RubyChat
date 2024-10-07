@@ -13,9 +13,10 @@
 #    arraySpeed         - Check the speed of Array tables and function calling.
 #    inputSpeed         - Compare the speed of the various input checking styles.
 #    classCalls         - Test call method return time across a basic Module and Class.
+#    variableSpeeds     - Compare the speed of read/write access for variable types.
 #    randomNumbers      - Check speed in returning a reliable random number.
 #    numericFunctions   - Compare the speed of Math equating.
-#    TCP_NETWORK         - Checkout the speeds for aspects of TCP socketing.
+#    TCP_NETWORK        - Checkout the speeds for aspects of TCP socketing.
 #
 #  The most current description and items in the Benchmark suite will always be found in the registry of * Magic Numbers *
 #
@@ -44,35 +45,35 @@ require '../src/network/TCP/client.rb'
 
 #===============================================================================================================================
 # To assist in organization, the BenchTests object has been divided across multiple files. 
-require './benches/registry.rb'
-require './benches/test_groups.rb'
-require './benches/branches.rb'
+require './benches/registry.rb'      # Magic number container for defining tests.
+require './benches/test_groups.rb'   # Each test group, for running whole tests.
+require './benches/branches.rb'      # Where the tests are outlined.
 
 class BenchTests
   #---------------------------------------------------------------------------------------------------------
-  #D: Generally blank but an available spot for benchmarking code snipets quickly. 
+  #D: Generally blank but an availabel spot for benchmarking code snippets quickly. 
   #---------------------------------------------------------------------------------------------------------
-  def quick_bench()
+  def self.quick_bench()
     BenchTests.display_header("Quick Bench")
     #-----------------------------
     # This is a rough layout for a bench mark test, 
     # feel free to copy the formatting.
-    h = 'Quick Bench'; runfor = 1000
+    h = 'Quick Bench'; run_for = 10_000
     temp = 0
     # reports times as string "user system total ( real)\n"
     s = Benchmark.measure { 
-      runfor.times { |nr|
+      run_for.times { |nr|
       # Put the code your looking to test with in line dividers:
       #-----------------------------
-      # Code snipet to test a speed of:
+      # Code snippet to test a speed of:
 
-        temp += nr # adding numbers for example.. 
+        temp += nr # adding numbers for example..
 
       # can be multiple lines, calls n such.
       #-----------------------------
     }}
     # build the return display format for proper window and console report style
-    BenchTests.showText("#{h}\t(#{runfor})\t#{s}")
+    BenchTests.showText("#{h}\t(#{run_for})\t#{s}")
     #-----------------------------
     BenchTests.display_footer()
   end
@@ -96,25 +97,27 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   def run(group)
     case group
-    when BT::HASH_VS_ARRAY::Group_Name then test_arrayhash_speed()
-    when BT::RND_NUMBER::Group_Name    then test_array_speeds()
-    when BT::ARRAY_SPEED::Group_Name   then test_class_calls()
-    when BT::INPUT_SPEED::Group_Name   then test_input_speeds()
-    when BT::CALL_METHOD::Group_Name   then test_random_number_gen()
-    when BT::NUMERIC::Group_Name       then test_numeric_functions()
+    when BT::HASH_VS_ARRAY::Group_Name  then test_arrayhash_speed()
+    when BT::RND_NUMBER::Group_Name     then test_array_speeds()
+    when BT::ARRAY_SPEED::Group_Name    then test_class_calls()
+    when BT::VARIABLE_SPEED::Group_Name then test_variable_speeds()
+    when BT::INPUT_SPEED::Group_Name    then test_input_speeds()
+    when BT::CALL_METHOD::Group_Name    then test_random_number_gen()
+    when BT::NUMERIC::Group_Name        then test_numeric_functions()
     when BT::TCP_NETWORK::Group_Name    then test_TCP_NETWORK()
     when 'quick_bench' then quick_bench()
     else
-      puts "There is not Benchtest group by that tag identifier: #{group}"
+      puts "There is not Benchmark test group by that tag identifier: #{group}"
     end
   end
   #---------------------------------------------------------------------------------------------------------
-  #D: Run all benches available.
+  #D: Run all benches availabel.
   #---------------------------------------------------------------------------------------------------------
   def run_all()
     test_arrayhash_speed()
     test_array_speeds()
     test_class_calls()
+    test_variable_speeds()
     test_input_speeds()
     test_random_number_gen()
     test_numeric_functions()
@@ -151,7 +154,7 @@ class BenchTests
   #---------------------------------------------------------------------------------------------------------
   def self.display_footer()
     BenchTests.showText("------------------------------------------------------------------\n")
-    BenchTests.showText("!ENDEX!\n")
+    BenchTests.showText("!ENDED!\n")
     GC.start # calls the garbage collector after each group test is finished
   end
   #---------------------------------------------------------------------------------------------------------

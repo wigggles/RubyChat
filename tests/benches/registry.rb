@@ -19,7 +19,7 @@ class BenchTests
     HASH_VS_ARRAY::Hash_EACH_KEY     = 7
     #--------------------------------------
     module RND_NUMBER; end
-    RND_NUMBER::Group_Name = 'arraySpeed'
+    RND_NUMBER::Group_Name = 'randomNumbers'
     RND_NUMBER::TR     = Range.new( 20, 39)
     RND_NUMBER::Standard             = 21
     RND_NUMBER::Ranged               = 22
@@ -28,7 +28,7 @@ class BenchTests
     # ^ last one is more of a follow up tool to a benchmark ran before it.
     #--------------------------------------
     module ARRAY_SPEED; end
-    ARRAY_SPEED::Group_Name = 'classCalls'
+    ARRAY_SPEED::Group_Name = 'arraySpeed'
     ARRAY_SPEED::TR   = Range.new( 40, 59)
     ARRAY_SPEED::LEVEL1_write        = 41
     ARRAY_SPEED::LEVEL1_read         = 42
@@ -53,8 +53,8 @@ class BenchTests
     INPUT_SPEED::HYBRID_MOVE      = 67
     #--------------------------------------
     module CALL_METHOD; end
-    CALL_METHOD::Group_Name = 'randomNumbers'
-    CALL_METHOD::TR    = Range.new(100, 119)
+    CALL_METHOD::Group_Name = 'classCalls'
+    CALL_METHOD::TR    = Range.new(100, 109)
     CALL_METHOD::MATH_local          = 101
     CALL_METHOD::MATH_module         = 102
     CALL_METHOD::MATH_class          = 103
@@ -62,12 +62,28 @@ class BenchTests
     CALL_METHOD::METHODS_module      = 105
     CALL_METHOD::METHODS_class       = 106
     #--------------------------------------
+    module VARIABLE_SPEED;end
+    VARIABLE_SPEED::Group_Name = 'variableSpeeds'
+    VARIABLE_SPEED::TR    = Range.new(110, 119)
+    VARIABLE_SPEED::LOCAL_WRITE          = 111
+    VARIABLE_SPEED::LOCAL_READ           = 112
+    VARIABLE_SPEED::INSTANCE_WRITE       = 113
+    VARIABLE_SPEED::INSTANCE_READ        = 114
+    VARIABLE_SPEED::CLASS_WRITE          = 115
+    VARIABLE_SPEED::CLASS_READ           = 116
+    VARIABLE_SPEED::GLOBAL_WRITE         = 117
+    VARIABLE_SPEED::GLOBAL_READ          = 118
+    #--------------------------------------
     module NUMERIC; end
     NUMERIC::Group_Name = 'numericFunctions'
     NUMERIC::TR        = Range.new(120, 139)
     NUMERIC::RANGE_CLAMP_if          = 121
     NUMERIC::RANGE_CLAMP_ternary     = 122
     NUMERIC::RANGE_CLAMP_Ruby_clamp  = 123
+    NUMERIC::INCREMENT_add           = 124
+    NUMERIC::INCREMENT_plus          = 125
+    NUMERIC::DECREMENT_minus         = 126
+    NUMERIC::DECREMENT_subtract      = 127
     #--------------------------------------
     module TCP_NETWORK; end
     TCP_NETWORK::Group_Name = 'TCP_NETWORK'
@@ -85,19 +101,20 @@ class BenchTests
   #D: This is done to allow if required a Gosu.tick intermittent call if a group of bench marks takes a long time.
   #D: Providing a prevention outlet to 'hang' issues for long benches with results wished to be shown in GUI.
   #---------------------------------------------------------------------------------------------------------
-  def run_bench(index, runfor = 0)
+  def run_bench(index, run_for = 0)
     @test_index += 1 # if keeping track..
     case index
-    when BT::HASH_VS_ARRAY::TR then return benches_hasharray(index, runfor)
-    when BT::RND_NUMBER::TR    then return benches_random_number(index, runfor)
-    when BT::ARRAY_SPEED::TR   then return benches_array(index, runfor)
-    when BT::INPUT_SPEED::TR   then return benches_input_speeds(index, runfor)
-    when BT::CALL_METHOD::TR   then return benches_call_method(index, runfor)
-    when BT::NUMERIC::TR       then return benches_numeric(index, runfor)
-    when BT::TCP_NETWORK::TR    then return benches_TCP_NETWORK(index, runfor)
+    when BT::HASH_VS_ARRAY::TR  then return benches_hasharray(index, run_for)
+    when BT::RND_NUMBER::TR     then return benches_random_number(index, run_for)
+    when BT::ARRAY_SPEED::TR    then return benches_array(index, run_for)
+    when BT::INPUT_SPEED::TR    then return benches_input_speeds(index, run_for)
+    when BT::CALL_METHOD::TR    then return benches_call_method(index, run_for)
+    when BT::VARIABLE_SPEED::TR then return benches_variable_speeds(index, run_for)
+    when BT::NUMERIC::TR        then return benches_numeric(index, run_for)
+    when BT::TCP_NETWORK::TR    then return benches_TCP_NETWORK(index, run_for)
     else
       s = "Unknown bench mark run for index(#{index})\n"
     end
-    return "#{index}\t(#{runfor})\t#{s}" # benchmark adds \n return from s
+    return "#{index}\t(#{run_for})\t#{s}" # benchmark adds \n return from s
   end
 end

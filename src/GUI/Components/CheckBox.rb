@@ -1,5 +1,5 @@
 #===============================================================================================================================
-# !!!  CheckBox.rb |  Click toggable interactive input GUI object for Gosu window based applications.
+# !!!  CheckBox.rb |  Click taggable interactive input GUI object for Gosu window based applications.
 #===============================================================================================================================
 class GUI::CheckBox < GUI::Button
   attr_accessor :toggled
