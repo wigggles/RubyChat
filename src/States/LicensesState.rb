@@ -9,7 +9,6 @@ class LicensesState
       text: Gosu::LICENSES
     })
   end
-
   #---------------------------------------------------------------------------------------------------------
   #D: Update loop, where things get up to date!
   def update
@@ -22,7 +21,6 @@ class LicensesState
     return if $application.nil?
     @textWall.draw
   end
-
   #---------------------------------------------------------------------------------------------------------
   # Called when the menu is shut, it releases things back to GC.
 	def dispose

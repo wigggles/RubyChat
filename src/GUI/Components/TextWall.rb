@@ -22,7 +22,6 @@ class GUI::TextWall < GUI::Component
     return unless super()
     @font.draw_text(@text, @x, @y, @z+1, 1, 1, 0xFF_ffffff)
   end
-
   #---------------------------------------------------------------------------------------------------------
   #D: Called when the button is disposed and/or when the parent class is destroyed.
   def dispose()

@@ -280,7 +280,7 @@ end
       @input_repeat = KEY_REPEAT * 20
       @last_character = button_id
     end
-    puts "key (#{key}) '#{@last_character}' keys: #{@buttons_down.size}"
+    #puts "key (#{key}) '#{@last_character}' keys: #{@buttons_down.size}"
     return key
   end
   #---------------------------------------------------------------------------------------------------------

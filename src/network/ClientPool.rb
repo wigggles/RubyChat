@@ -2,15 +2,12 @@
 # !!!   ClientPool.rb  |  Where all the clients get to swim together.
 #===============================================================================================================================
 class ClientPool
-  # The REF ID size is heavily dependent on the configuration for the string packaging in a server message.
-  # That configuration for packaging is done in the TCPsession::Package module.
-  REF_ID_SIZE = 10 # Should match the generated ref_id length. (10 for 'unclamped' which is currently configured.)
-  # Additional package flags for arriving data types.
+  # Additional package flags for arriving data sub packaged types.
   module DATAMODE
     ALL_CLIENTS = 0
   end
   #---------------------------------------------------------------------------------------------------------
-  # Managable client object.
+  # Manageable client object.
   class Client
     attr_reader :ref_id, :username, :session_pointer
     #--------------------------------------
@@ -22,13 +19,13 @@ class ClientPool
     #--------------------------------------
     def set_ref_id(new_id)
       return nil unless new_id.is_a?(String)
-      if new_id.length < ClientPool::REF_ID_SIZE
+      if new_id.length < TCPsession::Package::CLIENT_ID_SIZE
         Logger.error("ClientPool::Client", "New Client ref_id:(#{new_id.inspect}) doesn't match length.",
           tags: [:Client]
         )
         return nil
       end
-      ref_id = new_id[0...ClientPool::REF_ID_SIZE]
+      ref_id = new_id[0...TCPsession::Package::CLIENT_ID_SIZE]
       Logger.info("ClientPool::Client", "Changing Client ref_id:(#{@ref_id.inspect}) to:(#{ref_id.inspect})",
         tags: [:Client]
       )

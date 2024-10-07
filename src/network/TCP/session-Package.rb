@@ -4,42 +4,62 @@
 class TCPsession
   #---------------------------------------------------------------------------------------------------------
   # The expanded more workable type of socket data. Gives the session byte data string workable structure.
+  # The length constant accompanying the byte string used when packing/unpacking should match the parts
+  # with in it. To assist with this, spaces can and are being used to show package sections for the bytes
+  # contained in the string based on their defined string pack flags.
   class Package
     attr_reader :ref_id, :data_mode, :data
     attr_reader :created_time, :latency_server, :latency_sender
     CALCULATE_LATENCY = true
+
+    # WorldObject REF ID size is heavily dependent on the configuration for the string packaging in a server message.
+    OBJ_ID_SIZE = 8 # Should match the generated ref_id length. (8 for 'clamped' which is currently configured.)
+
+    # Client REF ID size is heavily dependent on the configuration for the string packaging in a server message.
+    CLIENT_ID_SIZE = 10 # Should match the generated ref_id length. (10 for 'unclamped' which is currently configured.)
+
     #--------------------------------------
-    BYTE_STRING = "q Z10 q n a*"
+    BYTE_STRING = "q Z#{TCPsession::Package::CLIENT_ID_SIZE} q n a*"
     ARRAY_LENGTH = 5
     # The above defines how to deal with the string stream of data.
     #
     #    q    | 8-byte integer  | local creation time endian.
-    #    Z10  | 10 char bytes   | originating client id. ClientPool::REF_ID_SIZE
+    #    Z00  | +0 char bytes   | originating client id. TCPsession::Package::CLIENT_ID_SIZE
     #    q    | 8-byte integer  | server touched time endian.
     #    n    | 2-byte signed   | mode integer.
     #    a*   | take whats left | an arbitrary length 'message' as a byte string value.
+
     #--------------------------------------
     BYTE_CLIENTSYNC = "n a*"
     CLIENTSYNC_LENGTH = 2
-    BYTE_CLIENT = "Z10 Z20"
-    CLIENT_BYTES = 30
-    # After using the BYTE_STRING to define common data, perform additional processing.
+    # The above client sync package can contain multiple client updates with in it, these
+    # packages are individualized for each client and can be handled in their own way.
+    # Currently, this client package only syncs name changes with in the pool, but can be
+    # used to update their location/animation in a game world, or even health and state/status.
+    BYTE_CLIENT = "Z#{TCPsession::Package::CLIENT_ID_SIZE} Z20"
+    CLIENT_BYTES = 30 # expected size of a client with in a pool sync package. This includes
+    # the clients reference ID and a buffered data chunk for pre-defined bytes.
+    # After using the BYTE_STRING to define common data, additional processing can be performed.
     #
     #    n    | 2-byte signed   | type integer.
-    #    a*   | take whats left | typically a list of clients.
+    #    a*   | take whats left | typically a list of clients, bellow is how the list is broken down.
     #
-    #    Z10  | 10 char bytes   | reference ID.
+    #    Z00  | +0 char bytes   | reference ID, the TCPsession::Package::CLIENT_ID_SIZE
     #    Z20  | 20 char bytes   | client username.
+
     #--------------------------------------
-    BYTE_OBJECT = "Z10 L L n a*"
+    BYTE_OBJECT = "Z#{TCPsession::Package::OBJ_ID_SIZE} L L n a*"
     OBJECT_LENGTH = 5
+    # The above is for syncing a game object with in a world. This can be a create, door,
+    # platform, and/or weapon actions.
     # After using the BYTE_STRING to define common data, perform additional processing.
     #
-    #    Z10  | 10 char bytes   | object reference ID.
+    #    Z00  | +0 char bytes   | object reference ID, the TCPsession::Package::OBJ_ID_SIZE
     #    L    | 4-byte unsigned | object X world position.
     #    L    | 4-byte unsigned | object Y world position.
     #    n    | 2-byte signed   | type integer.
     #    a*   | take whats left | an arbitrary length byte string.
+
     #--------------------------------------
     BYTE_MAPSYNC = "n a*"
     MAPSYNC_LENGTH = 2
@@ -47,6 +67,7 @@ class TCPsession
     #
     #    n    | 2-byte signed   | type integer.
     #    a*   | take whats left | an arbitrary length byte string.
+
     #--------------------------------------
     # It's crude but effective to count up using constants.
     module DATAMODE

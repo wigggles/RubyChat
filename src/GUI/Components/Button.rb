@@ -31,7 +31,7 @@ class GUI::Button < GUI::Component
     @has_actioned = false
     # setup call method for action
     if @owner.nil?
-      print("Error with Button no ower, skipping")
+      print("Error with Button no owner, skipping")
       return nil
     end
     @action = options[:action] || nil

@@ -45,11 +45,13 @@ module Configuration
     ident:          "http://ident.me",
     whatsmyaddress: "http://bot.whatismyipaddress.com"
   }
+  # Bellow sets which remote IP look up service to use when getting application IP.
+  USE_REMOTE_LOOKUP = :akamai
   # Get local subnet IP, (LAN) and remote (Public) IP using 3rd party site API.
   def self.getSelfIP()
     begin
       local_ip  = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
-      remote_ip = URI.open(REMOTE_IP_API[:akamai]).read()
+      remote_ip = URI.open(REMOTE_IP_API[USE_REMOTE_LOOKUP]).read()
     rescue => error
       Logger.error("Configuration", "Could not resolve public/local IPs, 'No Internet'?"+
         "\n(#{error.inspect})",
@@ -84,7 +86,7 @@ module Configuration
     # If using a semi human readable id that was generated, it needs to be at least 10 characters.
     if as_string
       # The ID is converted to base 16 hex, doubling its string length. A generalization of a poor probability
-      # can be seen with only using a portion of the total availabel unique identifiers. Larger values also
+      # can be seen with only using a portion of the total available unique identifiers. Larger values also
       # require more bytes to package data when transporting it around.
       new_id = new_id.to_s(16)
       if micro # only grab 3 bytes (6 characters), quite high chances of generating an existing id
@@ -108,8 +110,8 @@ module Configuration
       # net traffic or saving to file space when working with raw byte file types.
       new_id = [new_id].pack('H*') if packed
     end
-    # Even using the 4 byte system, one thousandth of the maximum number of IDs generated would still just about support 500_000
-    # objects.
+    # Even using the 4 byte system, one thousandth of the maximum number of IDs generated would still just
+    # about support 500_000 objects comfortably.
     return new_id
   end
 end
