@@ -130,23 +130,51 @@ x                   |            | null byte
 [Table Source](https://rubydoc.info/stdlib/core/1.9.3/Array:pack)
 
 
+### Style Guide
+
+This project takes advantage of the [Community Guide](https://rubystyle.guide/) driven styler that utilizes the [Rubocop Gem](https://rubocop.org/)
+to provide a 'lint' (with out configuration options) making code more clear by advising against the use of defining
+declarative syntax and avoid character enclosures when ran. Just more cold and calculating with less characters
+required to do the same job. Also unifies the language creating a standard of 'use-case' in an evolving landscape
+of one off code snippets across a multitude of [Ruby](https://www.ruby-lang.org/en/) versions. In the end, experiment
+how ever you want. When releasing, it may help to follow a rich community guide attempting to set a standard with the syntax.
+Usually I'll just run the following to auto correct most common issues and log the results to file for review.
+```shell
+rubocop --fix-layout --autocorrect --extra-details -o './rubo_layout-log.txt'
+
+rubocop --lint -o './rubo_lint-log.txt'
+```
+
+Ruby also has a built in toolkit that can be used without the Rubocop gem installed which also is worth checking out.
+```shell
+ruby -wc
+
+-w: This option enables warnings about problematic code.
+-c: This option tells Ruby to check the syntax of the code but not to execute it.
+```
+
+
 ### Fun stuff to know
 
 When using an ApplicationWindow you can take advantage of the InputControls bound to it. To do so, bellow
 are some examples of how to do it.
 
 ```ruby
-$controls.holding?(:move_up)
-$controls.holding?(:move_down)
-$controls.holding?(:shift)
+$application.controls.holding?(:move_up)
+$application.controls.holding?(:move_down)
+$application.controls.holding?(:shift)
 
-$controls.trigger?(:menu_action)
-$controls.trigger?(:menu_up)
-$controls.trigger?(:cancel_action)
-$controls.trigger?(:action_key)
+$application.controls.trigger?(:menu_action)
+$application.controls.trigger?(:menu_up)
+$application.controls.trigger?(:cancel_action)
+$application.controls.trigger?(:action_key)
 
-$controls.holding?(:mouse_lclick)
-$controls.trigger?(:mouse_lclick)
+$application.controls.holding?(:mouse_lclick)
+$application.controls.trigger?(:mouse_lclick)
 $application.mouse_x.to_i()
 $application.mouse_y.to_i()
 ```
+
+#### General Concepts
+
+![alt text](documents/UserPool.png "User Pool Graphic")

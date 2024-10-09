@@ -1,23 +1,23 @@
 #!/usr/bin/env ruby
-#===============================================================================================================================
+#=====================================================================================================================
 # !!!   server.rb  | Starts and is the manager for the server service.
-#-------------------------------------------------------------------------------------------------------------------------------
-require './src/internal/Configuration.rb'
+#-----------------------------------------------------------------------------------------------------------------------
+require './src/internal/Configuration'
 
-#===============================================================================================================================
+#=====================================================================================================================
 if Configuration::CLI_MODE
   require 'socket'
-  require './src/network/TCP/session.rb'
-  require './src/network/TCP/server.rb'
+  require './src/network/TCP/session'
+  require './src/network/TCP/server'
 
-  server = TCPserver.new()
-  server.listen()
-  
+  server = TCPserver.new
+  server.listen
+
 else # using GUI mode
-  require './src/ApplicationWindow.rb'
+  require './src/ApplicationWindow'
 
   applicationGosuWindow = ApplicationWindow.new(true)
-  applicationGosuWindow.show()
+  applicationGosuWindow.show
 end
 
-exit()
+exit

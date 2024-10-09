@@ -1,337 +1,337 @@
-#===============================================================================================================================
+#=====================================================================================================================
 # !!!  ApplicationWindow.rb |  An interactive Gosu Window based chat GUI.
-#===============================================================================================================================
+#=====================================================================================================================
 require 'socket'
 require 'gosu'
 
-require './src/internal/InputControls.rb'
+require './src/internal/InputControls'
 
-require './src/network/ClientPool.rb'
-require './src/network/TCP/session-Package.rb'
-require './src/network/TCP/session.rb'
-require './src/network/TCP/server.rb'
-require './src/network/TCP/client.rb'
+require './src/network/ClientPool'
+require './src/network/TCP/session-Package'
+require './src/network/TCP/session'
+require './src/network/TCP/server'
+require './src/network/TCP/client'
 
-require './src/GUI/Component.rb'
-require './src/GUI/BlobDraw.rb'
-require './src/GUI/Components/Button.rb'
-require './src/GUI/Components/CheckBox.rb'
-require './src/GUI/Components/TextField.rb'
-require './src/GUI/Components/ConsoleBox.rb'
-require './src/GUI/Components/TextWall.rb'
+require './src/GUI/Component'
+require './src/GUI/BlobDraw'
+require './src/GUI/Components/Button'
+require './src/GUI/Components/CheckBox'
+require './src/GUI/Components/TextField'
+require './src/GUI/Components/ConsoleBox'
+require './src/GUI/Components/TextWall'
 
-require './src/States/MainState.rb'
+require './src/States/MainState'
 
-require './src/Game/GameWorld.rb'
-require './src/Game/WorldObject.rb'
-require './src/Game/World_00.rb'
+require './src/Game/GameWorld'
+require './src/Game/WorldObject'
+require './src/Game/World_00'
 
-#===============================================================================================================================
+#=====================================================================================================================
 class ApplicationWindow < Gosu::Window
   attr_reader :font, :service_mode
+
   #---------------------------------------------------------------------------------------------------------
   # Construct a server and listen for/to clients, or be a client and connect to a server.
   def initialize(
-    is_server = false, 
+    is_server = false,
     fullscreen: Configuration::FULL_SCREEN, resizable: Configuration::RESIZABLE,
     borderless: false, update_interval: Configuration::GOSU_UPDATE_MS
   )
     @service_mode = nil || :offline
-    GC.start()
+    GC.start
     @disposed = false
     # create a new Gosu::Window
     super(
       Configuration::INITIAL_SCREEN_WIDTH, Configuration::INITIAL_SCREEN_HEIGHT, {
-        fullscreen: fullscreen, resizable: (resizable && !fullscreen),
+        fullscreen: fullscreen, resizable: resizable && !fullscreen,
         borderless: borderless, update_interval: update_interval
       }
     )
     @font = Gosu::Font.new(self, nil, 24)
-    $controls = InputControls.new()
+    @controls = InputControls.new
     # create a new session socket manager
     @is_server = is_server
     # start up the GUI's initial state manager
     $application = self
-    $application.caption = "Gosu Network Demo"
+    self.caption = 'Gosu Network Demo'
     @application_state = nil
-    set_app_state(MainState.new())
+    start_app_state(MainState.new)
     # delay the autostart of network services, this provides enough time for the GUI to be created
-    Thread.new {
+    Thread.new do
       sleep(0.1)
       if is_server
         @service_mode = :tcp_server
-        start_server_service()
+        start_server_service
       else
-        @username = ARGV[0] || "GosuGUI_01"
+        @username = ARGV[0] || 'GosuGUI_01'
         @service_mode = :tcp_client
-        start_client_service() if @service_mode == :tcp_client
+        start_client_service if @service_mode == :tcp_client
       end
       # allow Logger to write into the '@application_state' if that Object has a method for it
       Logger.bind_application_window(self)
-    }
+    end
   end
 
   #---------------------------------------------------------------------------------------------------------
   def self.screen_width
     return 0 if $application.nil?
-    return @width
+
+    @width
   end
 
   def self.screen_height
     return 0 if $application.nil?
-    return @height
+
+    @height
   end
-  
+
   #---------------------------------------------------------------------------------------------------------
   def needs_cursor?
-    return true
+    true
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Required to display upon request the Gosu licensing.
   def show_gosu_legal
-    set_app_state(LicensesState.new())
+    start_app_state(LicensesState.new)
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Check if application is acting as the server, also checks if its running a network session.
   def is_server?
     if @is_server
-      return false if current_session().nil?
+      return false if current_session.nil?
+
       return true
     end
-    return false
+    false
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Check if the application acting as a client, also checks if there is an active network session.
   def is_client?
     unless @is_server
-      return false if current_session().nil?
+      return false if current_session.nil?
+
       return true
     end
-    return false
+    false
   end
 
   #---------------------------------------------------------------------------------------------------------
   # If not already a client or running a server, start a new network server instance.
-  def start_server_service()
+  def start_server_service
     case @service_mode
     when :tcp_server
-      @server = TCPserver.new()
-      send_data_into_state("TCPServer started, listening...")
-      Thread.new {
+      @server = TCPserver.new
+      send_data_into_state('TCPServer started, listening...')
+      Thread.new do
         @server.listen(self)
-      }
+      end
     else
-      Logger.error("ApplicationWindow", "Unknown socket server type. (#{@service_mode})")
+      Logger.error('ApplicationWindow', "Unknown socket server type. (#{@service_mode})")
     end
   end
 
   #---------------------------------------------------------------------------------------------------------
   # If not a server or already a client, start a new network client instance.
-  def start_client_service()
-    send_data_into_state("Attempting to connect to server...")
+  def start_client_service
+    send_data_into_state('Attempting to connect to server...')
     case @service_mode
     when :tcp_client
-      Thread.new { 
-        @client = TCPclient.new("localhost")
+      Thread.new do
+        @client = TCPclient.new('localhost')
         if @client.error.nil?
           @client.start_session(@username)
-          start_client_session()
+          start_client_session
           @client.connect(report_to: self)
         else
-          Logger.error("ApplicationWindow", "Failed to start client session.")
+          Logger.error('ApplicationWindow', 'Failed to start client session.')
         end
-      }
-    else
-      Logger.error("ApplicationWindow", "Unknown socket client type. (#{@service_mode})")
-    end
-  end
-
-  #---------------------------------------------------------------------------------------------------------
-  def start_client_session()
-    unless @client.nil?
-      if @client.session.nil?
-        send_data_into_state("Server not found.")
-      else
-        send_data_into_state("Client touched server.")
       end
     else
-      send_data_into_state("Can not start session.")
+      Logger.error('ApplicationWindow', "Unknown socket client type. (#{@service_mode})")
     end
   end
 
   #---------------------------------------------------------------------------------------------------------
-  #:D Called by Gosu::Window when a button was pressed, but was now released.
-  def button_up(id)
-    return if $controls.nil?
-    $controls.button_up(id)
-    super(id)
+  def start_client_session
+    if @client.nil?
+      send_data_into_state('Can not start session.')
+    elsif @client.session.nil?
+      send_data_into_state('Server not found.')
+    else
+      send_data_into_state('Client touched server.')
+    end
   end
+
   #---------------------------------------------------------------------------------------------------------
-  #:D Called by Gosu::Window when a button has been pressed.
-  def button_down(id)
-    return if $controls.nil?
-    $controls.button_down(id)
+  # :D Called by Gosu::Window when a button was pressed, but was now released.
+  def button_up(id)
+    return if @controls.nil?
+
+    @controls.button_up(id)
     super(id)
   end
 
-  def gamepad_connected(index)
+  #---------------------------------------------------------------------------------------------------------
+  # :D Called by Gosu::Window when a button has been pressed.
+  def button_down(id)
+    return if @controls.nil?
 
+    @controls.button_down(id)
+    super(id)
   end
 
-  def gamepad_disconnected(index)
+  def gamepad_connected(index); end
 
-  end
+  def gamepad_disconnected(index); end
 
   def controls
-    return $controls
+    @controls
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Get the current network session socket between two separate synced network services based on current mode.
-  def current_session()
+  def current_session
     case @service_mode
     when :tcp_server
       return nil if @server.nil?
-      return @server.session
+
+      @server.session
     when :tcp_client
       return nil if @client.nil?
-      return @client.session
-    else # :offline
-      return nil
+
+      @client.session
     end
+    # else is :offline, return nil
   end
-  
+
   #---------------------------------------------------------------------------------------------------------
   # Application window focus status from Operating System.
-  def gain_focus
+  def gain_focus; end
 
-  end
-
-  def lose_focus
-
-  end
+  def lose_focus; end
 
   #---------------------------------------------------------------------------------------------------------
   # Get 'self' local session's Client description.
-  def self_client_description()
-    session = current_session()
-    unless session.nil?
-      return session.description()
-    end
-    return nil
+  def self_client_description
+    session = current_session
+    return session.description unless session.nil?
+
+    nil
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Get the client pool as reported by the server.
-  def get_clients()
-    session = current_session()
-    unless session.nil?
-      return session.get_client_pool()
-    end
-    return nil
+  def get_clients
+    session = current_session
+    return session.get_client_pool unless session.nil?
+
+    nil
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Get the network service the current application mode is set to operate in.
-  def network_service()
+  def network_service
     case @service_mode
     when :tcp_server
-      return @server
+      @server
     when :tcp_client
-      return @client
+      @client
     else # :offline
-      return nil
+      nil
     end
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Used to utilize the open session socket to send data.
   def send_socket_data(data)
-    return nil if network_service().nil?
-    return nil if current_session().nil?    
+    return nil if network_service.nil?
+    return nil if current_session.nil?
+
     case @service_mode
     when :tcp_server
       case data
       when TCPsession::Package
-        data.set_server_time()
-        data_byte_string = data.get_packed_string()
+        data.set_server_time
+        data_byte_string = data.get_packed_string
       when String
         data_byte_string = current_session.package_data(data)
       else
-        Logger.error("ApplicationWindow", "Server attempting to send Unknown data type. (#{data.class})")
+        Logger.error('ApplicationWindow', "Server attempting to send Unknown data type. (#{data.class})")
         return nil
       end
-      Logger.debug("ApplicationWindow", "Server sending data. (#{data.inspect})")
-      return @server.send_bytes_to_everyone(data_byte_string, [])
+      Logger.debug('ApplicationWindow', "Server sending data. (#{data.inspect})")
+      @server.send_bytes_to_everyone(data_byte_string, [])
     when :tcp_client
-      Logger.debug("ApplicationWindow", "Client sending data. (#{data.inspect})")
-      return @client.send_data(data)
+      Logger.debug('ApplicationWindow', "Client sending data. (#{data.inspect})")
+      @client.send_data(data)
     else # :offline
-      return nil
+      nil
     end
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Create a new data package for sending information.
-  def getNew_session_package()
-    return nil if network_service().nil?
-    return nil if current_session().nil?
-    return current_session.empty_data_package()
+  def new_session_package
+    return nil if network_service.nil?
+    return nil if current_session.nil?
+
+    current_session.empty_data_package
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Check what running network mode status is for the application.
-  def get_service_mode()
-    return @service_mode
+  def retrive_service_mode
+    @service_mode
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Called when the application was shutdown by normal operation means.
-  def close()
-    Logger.warn("ApplicationWindow", "Closing application window.")
-    shutdown_network()
-    dispose()
+  def close
+    Logger.warn('ApplicationWindow', 'Closing application window.')
+    shutdown_network
+    dispose
     super()
   end
 
   #---------------------------------------------------------------------------------------------------------
   # If has the chance, will graciously shut down by informing all the listening clients.
-  def shutdown_network()
-    service = network_service()
-    unless service.nil?
-      # inform the clients the server is shutting down
-      if @is_server
-        session = current_session()
-        unless session.nil?
-          shutdown_msg = "Server shut down, goodbye #{service.client_pool.count} clients!"
-          out_data = session.package_data(shutdown_msg)
-          service.send_bytes_to_everyone(out_data)
-        end
+  def shutdown_network
+    service = network_service
+    return if service.nil?
+
+    # inform the clients the server is shutting down
+    if @is_server
+      session = current_session
+      unless session.nil?
+        shutdown_msg = "Server shut down, goodbye #{service.client_pool.count} clients!"
+        out_data = session.package_data(shutdown_msg)
+        service.send_bytes_to_everyone(out_data)
       end
-      # shut down the service
-      service.shutdown()
     end
+    # shut down the service
+    service.shutdown
   end
 
   #---------------------------------------------------------------------------------------------------------
   # If taking advantage of the Logger module, log strings can be shared into the GUI experience.
-  def logger_write(string_msg = "")
+  def logger_write(string_msg = '')
     send_data_into_state(string_msg)
-    return true
+    true
   end
 
   #---------------------------------------------------------------------------------------------------------
   def send_data_into_state(data)
     return false if @application_state.nil?
+
     @application_state.receive_network_data(data)
-    return true
+    true
   end
 
   #---------------------------------------------------------------------------------------------------------
-  def set_app_state(new_state)
+  def start_app_state(new_state)
     @application_state.destroy unless @application_state.nil?
     @application_state = new_state
   end
@@ -339,18 +339,19 @@ class ApplicationWindow < Gosu::Window
   #---------------------------------------------------------------------------------------------------------
   # Gosu bindings for the operating system's running environment provide a 'tick()' which is used as a game
   # clock. This clock loop is what checks for updates in a timely fashion. This clock should not be blocked.
-  def update()
+  def update
     return if disposed?
+
     # update the manager state and shared input controls
     @application_state.update unless @application_state.nil?
-    $controls.update() unless $controls.nil?
+    @controls.update unless @controls.nil?
   end
 
   #---------------------------------------------------------------------------------------------------------
   # To keep things robust and fluid, GUI states are handled independently of the ApplicationWindow. This
   # provides the states for GarbageCollection in a simpler fashion. This also provides a way of changing states
   # with ease, so if a state is a WorldMap or a Menu this transition/interaction can be handled by the Application.
-  def draw()
+  def draw
     @font.draw_text("FPS: #{Gosu.fps}", 16, 4, 0, 1, 1, 0xFF_ffffff)
     @application_state.draw unless @application_state.nil?
   end
@@ -358,13 +359,13 @@ class ApplicationWindow < Gosu::Window
   #---------------------------------------------------------------------------------------------------------
   # Flag this class as being disposed of, which means it announces do not use me, im getting rid of my things.
   # This most notably happens on and around shutdowns.
-  def dispose()
+  def dispose
     @disposed = true
   end
 
   #---------------------------------------------------------------------------------------------------------
   # Return a boolean based on if this (self) Object has been flagged for cleanup.
   def disposed?
-    return @disposed
+    @disposed
   end
 end

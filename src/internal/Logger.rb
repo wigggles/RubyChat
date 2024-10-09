@@ -1,10 +1,10 @@
-#===============================================================================================================================
+#=====================================================================================================================
 # !!! Logger.rb   |  Instead of having puts() and print() all over, funnel through this module instead.
-#-------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
 # https://www.rubydoc.info/stdlib/core/2.0.0/Kernel
 #
 # https://ruby-doc.org/core-2.5.0/Thread/Backtrace/Location.html
-#===============================================================================================================================
+#=====================================================================================================================
 module Logger
   USE_CONSOLE_COLORS = true
   # Terminal color codes
@@ -27,10 +27,12 @@ module Logger
     LIGHT_GRAY   = "\e[0;37m"
     WHITE        = "\e[1;37m"
   end
+
   #--------------------------------------
   module TermOps
     CLEAR        = "\033[2J"
   end
+
   #--------------------------------------
   module Level
     # The levels of logging
@@ -40,23 +42,28 @@ module Logger
     DEBUG  = 3
     INFO   = 4
     # The configurations of how the levels log things individually.
-    # Sharing strings to objects that also can do things with it. 
+    # Sharing strings to objects that also can do things with it.
     # Can do puts/prints, draw in GUI, maybe to file?
     CONFIG = {
-      Level::IGNORE => { 
-        use_flags:false, to_console:false, to_gui:false, to_file:false, show_location:false, use_color: nil
+      Level::IGNORE => {
+        use_flags: false, to_console: false, to_gui: false,
+        to_file: false, show_location: false, use_color: nil
       },
-      Level::ERROR  => {
-        use_flags:false, to_console:true , to_gui:true , to_file:false, show_location:true , use_color: TermColor::RED
+      Level::ERROR => {
+        use_flags: false, to_console: true, to_gui: true,
+        to_file: false, show_location: true, use_color: TermColor::RED
       },
-      Level::WARN   => {
-        use_flags:false, to_console:true , to_gui:true , to_file:false, show_location:true , use_color: TermColor::YELLOW
+      Level::WARN => {
+        use_flags: false, to_console: true, to_gui: true,
+        to_file: false, show_location: true, use_color: TermColor::YELLOW
       },
-      Level::DEBUG  => {
-        use_flags:true , to_console:true , to_gui:false, to_file:false, show_location:true , use_color: TermColor::GREEN
+      Level::DEBUG => {
+        use_flags: true, to_console: true, to_gui: false,
+        to_file: false, show_location: true, use_color: TermColor::GREEN
       },
-      Level::INFO   => {
-        use_flags:true , to_console:true , to_gui:false, to_file:false, show_location:false, use_color: TermColor::BLUE
+      Level::INFO => {
+        use_flags: true, to_console: true, to_gui: false,
+        to_file: false, show_location: false, use_color: TermColor::BLUE
       }
     }
   end
@@ -67,11 +74,11 @@ module Logger
   # Only shows logs with matching filter tag configuration.
   ENABLE_TAGS = true
   FILTER_TAGS = {
-    GUI:     false,
-    State:   false,
+    GUI: false,
+    State: false,
     Network: false,
     Package: false,
-    Client:   true
+    Client: true
   }
   #--------------------------------------
   # If sharing string with a GUI object, ber sure that it bound for method calling required to receive arguments.
@@ -84,15 +91,15 @@ module Logger
       # there can be a lot of log information, provide tag filters
       if Logger::ENABLE_TAGS && Logger::Level::CONFIG[level][:use_flags] && tags.size > 0
         show_log = false
-        tags.each() { |log_tag|
+        tags.each do |log_tag|
           show_log |= Logger::FILTER_TAGS[log_tag] # has any log tag enabled on it
-        }
+        end
         return nil unless show_log
       end
       # add timestamp into the logger
       if INCLUDE_TIMESTAMP
-        current_time = Time.now()
-        stamp = "#{current_time.strftime("%H:%M:%S")}.#{current_time.usec()}"
+        current_time = Time.now
+        stamp = "#{current_time.strftime('%H:%M:%S')}.#{current_time.usec}"
         if Logger::USE_CONSOLE_COLORS
           print("#{TermColor::PURPLE}[#{TermColor::WHITE}#{stamp}#{TermColor::PURPLE}] #{TermColor::NONE}")
         else
@@ -111,68 +118,77 @@ module Logger
         puts("#{label}-> #{msg}")
       end
       # if tracing where Logger was called from, include that information
-      if Logger::USE_CALL_TRACING && Level::CONFIG[level][:show_location]
-        self.show_caller_location()
-      end
+      show_caller_location if Logger::USE_CALL_TRACING && Level::CONFIG[level][:show_location]
     end
     # if there is a GUI write into that as well
-    self.write_to_gui(label, msg) if Level::CONFIG[level][:to_gui]
-    return true
+    write_to_gui(label, msg) if Level::CONFIG[level][:to_gui]
+    true
   end
+
   #---------------------------------------------------------------------------------------------------------
-  def self.error(title = "", msg = "", tags: [])
+  def self.error(title = '', msg = '', tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::ERROR
+
     label = "ERROR: (#{title})"
-    self.handle(Level::ERROR, label, msg, tags: tags)
+    handle(Level::ERROR, label, msg, tags: tags)
   end
+
   #---------------------------------------------------------------------------------------------------------
-  def self.warn(title = "", msg = "", tags: [])
+  def self.warn(title = '', msg = '', tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::WARN
+
     label = "WARN: (#{title})"
-    self.handle(Level::WARN, label, msg, tags: tags)
+    handle(Level::WARN, label, msg, tags: tags)
   end
+
   #---------------------------------------------------------------------------------------------------------
-  def self.debug(title = "", msg = "", tags: [])
+  def self.debug(title = '', msg = '', tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::DEBUG
+
     label = "DEBUG: (#{title})"
-    self.handle(Level::DEBUG, label, msg, tags: tags)
+    handle(Level::DEBUG, label, msg, tags: tags)
   end
+
   #---------------------------------------------------------------------------------------------------------
-  def self.info(title = "", msg = "", tags: [])
+  def self.info(title = '', msg = '', tags: [])
     return if @@paused
     return unless Logger::LEVEL >= Level::INFO
+
     label = "INFO: (#{title})"
-    self.handle(Level::INFO, label, msg, tags: tags)
+    handle(Level::INFO, label, msg, tags: tags)
   end
+
   #---------------------------------------------------------------------------------------------------------
   # Show where the Logger call originated from.
-  def self.show_caller_location()
+  def self.show_caller_location
     short_stack_trace = caller_locations(3, 1)
-    location_of_log_call = "./src/" + short_stack_trace[0].to_s.split('/src/').last()
+    location_of_log_call = './src/' + short_stack_trace[0].to_s.split('/src/').last
     if Logger::USE_CONSOLE_COLORS
-      puts("#{TermColor::PURPLE}^#{TermColor::NONE}"+
-        " logged from: #{TermColor::LIGHT_PURPLE}"+
-        "#{location_of_log_call}#{TermColor::NONE}"
-      )
+      puts("#{TermColor::PURPLE}^#{TermColor::NONE}" +
+        " logged from: #{TermColor::LIGHT_PURPLE}" +
+        "#{location_of_log_call}#{TermColor::NONE}")
     else
       puts("^ logged from: #{location_of_log_call}")
     end
-    return short_stack_trace
+    short_stack_trace
   end
+
   #---------------------------------------------------------------------------------------------------------
   # Make a request to send a passed string to an ApplicationWindow where it might know how to display it there.
-  def self.write_to_gui(label = "", msg = "")
+  def self.write_to_gui(label = '', msg = '')
     return if @@paused
     return false if @@bound_ApplicationWindow.nil?
+
     unless @@bound_ApplicationWindow.send(:logger_write, "#{label}-> #{msg}")
-      self.error("Logger", "There is a bound Window but no method to write into.")
+      error('Logger', 'There is a bound Window but no method to write into.')
       return false
     end
-    return true
+    true
   end
+
   #---------------------------------------------------------------------------------------------------------
   # If utilizing an ApplicationWindow in a GUI mode, these messages can also be logged to a GUI Component
   # given there is an active state that will process receiving these logging messages.
@@ -186,18 +202,21 @@ module Logger
       return true
     end
     # The request to bind passed 'parent_window' was of an object type Unknown
-    return false
+    false
   end
+
   #---------------------------------------------------------------------------------------------------------
   def self.paused?
-    return @@paused
+    @@paused
   end
+
   #---------------------------------------------------------------------------------------------------------
-  def self.pause()
+  def self.pause
     @@paused = true
   end
+
   #---------------------------------------------------------------------------------------------------------
-  def self.unpause()
+  def self.unpause
     @@paused = false
   end
 end
